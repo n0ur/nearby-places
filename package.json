@@ -1,0 +1,58 @@
+{
+  "name": "nearby-places",
+  "version": "0.0.1",
+  "description": "Finds nearby places within dynamic locations",
+  "main": "src/index.js",
+  "engine": {
+    "node": ">=24.1"
+  },
+  "scripts": {
+    "lint": "eslint src/ test/",
+    "lint:fix": "eslint src/ test/ --fix",
+    "format": "prettier . --write",
+    "test": "node --test",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.js": [
+      "npm run lint",
+      "npm run format"
+    ],
+    "*.json": [
+      "npm run format"
+    ],
+    "*.md": [
+      "npm run format"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/n0ur/nearby-places.git"
+  },
+  "keywords": [
+    "nearby",
+    "map",
+    "places",
+    "radius"
+  ],
+  "author": "n0ur",
+  "license": "GPL-3.0",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/n0ur/nearby-places/issues"
+  },
+  "homepage": "https://github.com/n0ur/nearby-places#readme",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.1.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.4.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.1"
+  },
+  "dependencies": {
+    "@fastify/static": "^9.0.0",
+    "fastify": "^5.8.4"
+  }
+}
