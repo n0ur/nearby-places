@@ -8,7 +8,13 @@ export default defineConfig([
     files: ["**/*.{js,mjs,cjs}"],
     plugins: { js },
     extends: ["js/recommended"],
-    languageOptions: { globals: globals.node },
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+        google: "readonly",
+      },
+    },
   },
   eslintConfigPrettier, // disables ESlint stylistic rules that conflict with Prettier
 ]);
