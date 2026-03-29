@@ -18,7 +18,7 @@ body {
   border-radius: 5px;
   box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
   margin: 10px;
-  padding: 5px;
+  padding: 15px;
   font:
     400 18px Roboto,
     Arial,
@@ -27,7 +27,8 @@ body {
   height: 100px;
 }
 
-#response-container {
+#response-container,
+#results-container {
   background-color: #fff;
   border: 0;
   border-radius: 5px;
@@ -35,7 +36,7 @@ body {
   padding: 15px;
   margin: 10px;
   font-size: medium;
-  width: 400px;
+  width: 350px;
   background-color: rgba(255, 255, 255, 0.95);
   max-height: 70vh;
   overflow-x: auto;
@@ -52,8 +53,13 @@ body {
   box-sizing: border-box;
 }
 
+#place-type {
+  height: 40px;
+}
+
 #submit,
-#clear {
+#clear,
+#find {
   background-color: #fff;
   border: 0;
   border-radius: 2px;
@@ -61,6 +67,7 @@ body {
   height: 40px;
   cursor: pointer;
   margin-right: 10px;
+  padding: 0 8px;
 }
 
 #clear:hover {
@@ -69,6 +76,10 @@ body {
 
 #submit {
   background-color: #1a73e8;
+  color: white;
+}
+#find {
+  background-color: #4caf50;
   color: white;
 }
 

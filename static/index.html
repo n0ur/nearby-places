@@ -49,7 +49,7 @@
   </head>
 
   <body>
-    <gmp-map zoom="16" map-id="DEMO_MAP_ID">
+    <gmp-map zoom="13" map-id="DEMO_MAP_ID">
       <div id="floating-panel" slot="control-block-start-inline-start">
         <input
           type="text"
@@ -59,11 +59,21 @@
         <br />
         <input type="button" id="submit" value="Geocode" />
         <input type="button" id="clear" value="Clear" />
+        <select id="place-type">
+          <option value="bar">Bar</option>
+          <option value="cafe">Cafe</option>
+          <option value="restaurant">Restaurant</option>
+        </select>
+        <input type="button" id="find" value="Find" />
         <br />
       </div>
       <div id="response-container" slot="control-block-start-inline-end">
         Addresses show here: (click to delete) <br />
         <div id="response"></div>
+      </div>
+      <div id="results-container" slot="control-block-start-inline-end">
+        Results: <br />
+        <div id="results"></div>
       </div>
     </gmp-map>
   </body>
