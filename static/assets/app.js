@@ -1,9 +1,38 @@
-async function initMap() {
-  if (!navigator.geolocation) {
-    handleLocationError(false);
-    return;
-  }
+const DEFAULT_ZOOM = 12;
 
+const data = {
+  //"schoenefeld": { position: { lat: 52.389, lng: 13.5037 } },
+  default: { position: { lat: 52.4743213, lng: 13.4276562 }, marker: null }, // hermannstr
+  kreuzberg: { position: { lat: 52.4983442, lng: 13.4065791 }, marker: null },
+  koepenick: {
+    position: { lat: 52.44260689999999, lng: 13.5822741 },
+    marker: null,
+  },
+  schoeneberg: {
+    position: { lat: 52.49042660000001, lng: 13.3602846 },
+    marker: null,
+  },
+  bergmannkiez: {
+    position: { lat: 52.4887869, lng: 13.3928533 },
+    marker: null,
+  },
+};
+
+const addresses = new Map(Object.entries(data));
+
+const args = {
+  addresses,
+  response: document.getElementById("response"),
+  mapElement: document.querySelector("gmp-map"),
+  // get assigned when drawing
+  polygon: null,
+  circle: null,
+  // get assigned after libraries load
+  AdvancedMarkerElement: null,
+  geometry: null,
+};
+
+async function initMap() {
   // load libraries
   const [, geocoding, { AdvancedMarkerElement }, geometry] = await Promise.all([
     google.maps.importLibrary("maps"),
@@ -11,22 +40,18 @@ async function initMap() {
     google.maps.importLibrary("marker"),
     google.maps.importLibrary("geometry"),
   ]);
+  args.geometry = geometry;
+  args.AdvancedMarkerElement = AdvancedMarkerElement;
 
-  // html elements
+  // set the map
+  args.mapElement.innerMap.setCenter(args.addresses.get("default").position);
+  args.mapElement.innerMap.setOptions({
+    mapTypeControl: false,
+    fullscreenControl: false,
+    draggableCursor: "crosshair",
+  });
+
   const inputText = document.getElementById("address");
-  const mapElement = document.querySelector("gmp-map");
-
-  // arguments used in functions below
-  const args = {
-    addresses: new Map(),
-    polygon: null,
-    circle: null,
-    response: document.getElementById("response"),
-    mapElement,
-    AdvancedMarkerElement,
-    geometry,
-  };
-
   const geocoder = new geocoding.Geocoder();
   document.getElementById("submit").addEventListener("click", () => {
     geocoder
@@ -51,6 +76,15 @@ async function initMap() {
   });
 
   document.getElementById("find").addEventListener("click", () => {});
+}
+
+initMap();
+
+function getCurrentPosition(args) {
+  if (!navigator.geolocation) {
+    handleLocationError(false);
+    return;
+  }
 
   navigator.geolocation.getCurrentPosition(
     (position) => {
@@ -58,13 +92,9 @@ async function initMap() {
         lat: position.coords.latitude,
         lng: position.coords.longitude,
       };
-      mapElement.innerMap.setCenter(pos);
-      mapElement.innerMap.setOptions({
-        mapTypeControl: false,
-        fullscreenControl: false,
-        draggableCursor: "crosshair",
-      });
-      addMarker("default", pos, args);
+      args.mapElement.innerMap.setCenter(pos);
+      addresses.set("current", { position: pos, marker: null });
+      //addMarker("default", pos, args);
     },
     () => {
       handleLocationError(true);
@@ -72,32 +102,57 @@ async function initMap() {
   );
 }
 
-initMap();
-
-function addMarker(label, pos, args) {
+function addMarker(label, position, args) {
   const { AdvancedMarkerElement, mapElement, addresses } = args;
-  const marker = new AdvancedMarkerElement({
-    position: pos,
-  });
+  const marker = new AdvancedMarkerElement({ position });
   mapElement.append(marker);
-  addresses.set(label, marker);
+  addresses.set(label, { position, marker });
   updateBounds(args);
   renderAddresses(args);
-  drawPolygon(args);
 }
 
 function removeMarker(item, args) {
-  const { addresses } = args;
-  if (addresses.size <= 1) {
+  if (args.addresses.size <= 1) {
     console.error("Cannot delete last address, add a new one first");
     return;
   }
-  const marker = addresses.get(item);
+  const { marker } = args.addresses.get(item);
   marker.map = null;
-  addresses.delete(item);
+  args.addresses.delete(item);
   updateBounds(args);
   renderAddresses(args);
-  drawPolygon(args);
+}
+
+function addAllMarkers(args) {
+  const { AdvancedMarkerElement, mapElement, addresses } = args;
+  const bounds = new google.maps.LatLngBounds();
+  // update the bounds
+  for (const [label, obj] of args.addresses) {
+    const position = getPosition(obj);
+
+    const marker = new AdvancedMarkerElement({ position });
+    mapElement.append(marker);
+    addresses.set(label, { ...obj, marker });
+
+    bounds.extend(position);
+  }
+
+  // When there's only one marker, fitBounds() zooms to the maximum zoom level
+  if (addresses.size === 1) {
+    mapElement.innerMap.setCenter([...addresses.values()][0].position);
+  } else {
+    mapElement.innerMap.fitBounds(bounds);
+  }
+  mapElement.innerMap.setZoom(DEFAULT_ZOOM);
+
+  renderAddresses(args);
+}
+
+function removeAllMarkers(args) {
+  for (const [, obj] of args.addresses) {
+    obj.marker?.setMap(null);
+  }
+  args.response.innerHTML = "";
 }
 
 function renderAddresses(args) {
@@ -112,17 +167,16 @@ function renderAddresses(args) {
 
 function updateBounds({ mapElement, addresses }) {
   const bounds = new google.maps.LatLngBounds();
-  for (const [, marker] of addresses) {
-    bounds.extend(getPosition(marker));
+  for (const [, obj] of addresses) {
+    bounds.extend(obj.position);
   }
   // When there's only one marker, fitBounds() zooms to the maximum zoom level
   if (addresses.size === 1) {
-    const pos = [...addresses.values()][0].position;
-    mapElement.innerMap.setCenter(pos);
-    mapElement.innerMap.setZoom(13);
+    mapElement.innerMap.setCenter([...addresses.values()][0].position);
   } else {
     mapElement.innerMap.fitBounds(bounds);
   }
+  mapElement.innerMap.setZoom(DEFAULT_ZOOM);
 }
 
 function getPosition(marker) {
@@ -152,25 +206,23 @@ function handleLocationError(browserHasGeolocation) {
 }
 
 function drawPolygon(args) {
-  const { addresses, mapElement, geometry } = args;
+  const { addresses, mapElement } = args;
   if (addresses.size <= 1) {
     return;
   }
 
-  const positions = [...addresses.values()].map((v) => getPosition(v));
-  const last = positions[positions.length - 1];
-
-  if (args.polygon && geometry.poly.containsLocation(last, args.polygon)) {
-    console.log("new address is within polygon, not drawing");
-    return;
-  }
-  // TODO: try: find outer paths only, or sort points, or path union
-  const sorted = positions.sort((a, b) => {
-    return a.lat - b.lat;
+  const positions = [...addresses.values()].map((v) => {
+    return v.position;
   });
+  console.log(positions);
 
+  //if (args.polygon && geometry.poly.containsLocation(last, args.polygon)) {
+  //  console.log("new address is within polygon, not drawing");
+  //  return;
+  //}
+  // TODO: try: find outer paths only, or sort points, or path union
   if (args.polygon) {
-    args.polygon.setPaths(sorted);
+    args.polygon.setPaths(positions);
   } else {
     args.polygon = new google.maps.Polygon({
       paths: positions,
@@ -182,9 +234,18 @@ function drawPolygon(args) {
       map: mapElement.innerMap,
     });
   }
+}
 
+function drawCircle(args) {
+  const { addresses, mapElement, geometry } = args;
+  if (addresses.size <= 1) {
+    return;
+  }
+  const positions = [...addresses.values()].map((v) => {
+    return v.position;
+  });
   // compute area of polygon
-  const area = geometry.spherical.computeArea(sorted);
+  const area = geometry.spherical.computeArea(positions);
   // convert polygon to circle
   const radius = Math.sqrt(area / Math.PI);
   const center = mapElement.innerMap.getBounds().getCenter();
@@ -202,5 +263,20 @@ function drawPolygon(args) {
       fillOpacity: 0.35,
       map: mapElement.innerMap,
     });
+  }
+}
+
+function shuffleMap(map) {
+  const shuffled = new Map();
+  const entries = [...map.entries()].sort(() => Math.random() - 0.5);
+  entries.forEach(([key, value]) => shuffled.set(key, value));
+  return shuffled;
+}
+
+// Fisher-Yates shuffle algorithm:
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
   }
 }
