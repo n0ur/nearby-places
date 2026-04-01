@@ -13,7 +13,11 @@ export default defineConfig([
         ...globals.node,
         ...globals.browser,
         google: "readonly",
+        turf: "readonly",
       },
+    },
+    rules: {
+      "no-unused-vars": "warn",
     },
   },
   eslintConfigPrettier, // disables ESlint stylistic rules that conflict with Prettier
