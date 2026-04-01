@@ -1,8 +1,9 @@
 const DEFAULT_ZOOM = 12;
 
+const CENTER_LOCATION = { lat: 52.4743213, lng: 13.4276562 };
 const data = {
   //"schoenefeld": { position: { lat: 52.389, lng: 13.5037 } },
-  default: { position: { lat: 52.4743213, lng: 13.4276562 }, marker: null }, // hermannstr
+  default: { position: CENTER_LOCATION, marker: null }, // hermannstr
   kreuzberg: { position: { lat: 52.4983442, lng: 13.4065791 }, marker: null },
   koepenick: {
     position: { lat: 52.44260689999999, lng: 13.5822741 },
@@ -18,11 +19,11 @@ const data = {
   },
 };
 
-const addresses = new Map(Object.entries(data));
-
 const args = {
-  addresses,
+  addresses: new Map(),
+  places: new Map(),
   response: document.getElementById("response"),
+  results: document.getElementById("results"),
   mapElement: document.querySelector("gmp-map"),
   // get assigned when drawing
   polygon: null,
@@ -44,7 +45,7 @@ async function initMap() {
   args.AdvancedMarkerElement = AdvancedMarkerElement;
 
   // set the map
-  args.mapElement.innerMap.setCenter(args.addresses.get("default").position);
+  args.mapElement.innerMap.setCenter(CENTER_LOCATION);
   args.mapElement.innerMap.setOptions({
     mapTypeControl: false,
     fullscreenControl: false,
@@ -75,7 +76,41 @@ async function initMap() {
     inputText.value = "";
   });
 
-  document.getElementById("find").addEventListener("click", () => {});
+  document.getElementById("find").addEventListener("click", () => {
+    findCenter(args);
+    const placeType = document.getElementById("place-type");
+    const center = getPosition(args.circle.getCenter());
+    const radius = args.circle.getRadius();
+
+    const request = {
+      // required parameters
+      fields: ["displayName", "location", "formattedAddress", "googleMapsURI"],
+      locationRestriction: {
+        center,
+        radius,
+      },
+      // optional parameters
+      includedPrimaryTypes: [placeType.value],
+      maxResultCount: 10,
+      rankPreference: google.maps.places.SearchNearbyRankPreference.POPULARITY,
+    };
+    google.maps.places.Place.searchNearby(request)
+      .then(({ places }) => {
+        for (const place of places) {
+          args.places.set(place.displayName, {
+            position: place.location,
+            marker: null,
+          });
+        }
+        addAllPlaces(args);
+      })
+      .catch((e) => console.error(e));
+  });
+
+  document.getElementById("place-clear").addEventListener("click", () => {
+    removeAllPlaces(args);
+    removeCircle(args);
+  });
 }
 
 initMap();
@@ -93,7 +128,7 @@ function getCurrentPosition(args) {
         lng: position.coords.longitude,
       };
       args.mapElement.innerMap.setCenter(pos);
-      addresses.set("current", { position: pos, marker: null });
+      args.addresses.set("current", { position: pos, marker: null });
       //addMarker("default", pos, args);
     },
     () => {
@@ -111,6 +146,20 @@ function addMarker(label, position, args) {
   renderAddresses(args);
 }
 
+function removeCircle(args) {
+  if (!args.circle) return;
+  args.circle.setMap(null);
+  args.circle = null;
+}
+
+function removePlace(item, args) {
+  const { marker } = args.places.get(item);
+  marker.map = null;
+  args.places.delete(item);
+  updateBounds(args);
+  renderPlaces(args);
+}
+
 function removeMarker(item, args) {
   if (args.addresses.size <= 1) {
     console.error("Cannot delete last address, add a new one first");
@@ -123,8 +172,9 @@ function removeMarker(item, args) {
   renderAddresses(args);
 }
 
-function addAllMarkers(args) {
-  const { AdvancedMarkerElement, mapElement, addresses } = args;
+function loadAddresses(args) {
+  args.addresses = new Map(Object.entries(data));
+  const { AdvancedMarkerElement, mapElement } = args;
   const bounds = new google.maps.LatLngBounds();
   // update the bounds
   for (const [label, obj] of args.addresses) {
@@ -132,14 +182,14 @@ function addAllMarkers(args) {
 
     const marker = new AdvancedMarkerElement({ position });
     mapElement.append(marker);
-    addresses.set(label, { ...obj, marker });
+    args.addresses.set(label, { ...obj, marker });
 
     bounds.extend(position);
   }
 
   // When there's only one marker, fitBounds() zooms to the maximum zoom level
-  if (addresses.size === 1) {
-    mapElement.innerMap.setCenter([...addresses.values()][0].position);
+  if (args.addresses.size === 1) {
+    mapElement.innerMap.setCenter([...args.addresses.values()][0].position);
   } else {
     mapElement.innerMap.fitBounds(bounds);
   }
@@ -148,11 +198,44 @@ function addAllMarkers(args) {
   renderAddresses(args);
 }
 
+function addAllPlaces(args) {
+  const { AdvancedMarkerElement, mapElement, places } = args;
+  const bounds = new google.maps.LatLngBounds();
+  // update the bounds
+  for (const [label, obj] of places) {
+    const position = getPosition(obj);
+
+    const marker = new AdvancedMarkerElement({ position });
+    mapElement.append(marker);
+    args.places.set(label, { ...obj, marker });
+
+    bounds.extend(position);
+  }
+
+  // When there's only one marker, fitBounds() zooms to the maximum zoom level
+  if (places.size === 1) {
+    mapElement.innerMap.setCenter([...places.values()][0].position);
+  } else {
+    mapElement.innerMap.fitBounds(bounds);
+  }
+  mapElement.innerMap.setZoom(DEFAULT_ZOOM);
+
+  renderPlaces(args);
+}
+
 function removeAllMarkers(args) {
   for (const [, obj] of args.addresses) {
     obj.marker?.setMap(null);
   }
   args.response.innerHTML = "";
+}
+
+function removeAllPlaces(args) {
+  for (const [, obj] of args.places) {
+    obj.marker?.setMap(null);
+  }
+  args.places = new Map();
+  args.results.innerHTML = "";
 }
 
 function renderAddresses(args) {
@@ -163,6 +246,16 @@ function renderAddresses(args) {
     removeMarker(item, args),
   );
   response.append(list);
+}
+
+function renderPlaces(args) {
+  const { results, places } = args;
+  results.innerHTML = "";
+
+  const list = createList([...places.keys()], (item) =>
+    removePlace(item, args),
+  );
+  results.append(list);
 }
 
 function updateBounds({ mapElement, addresses }) {
@@ -180,7 +273,7 @@ function updateBounds({ mapElement, addresses }) {
 }
 
 function getPosition(marker) {
-  const pos = marker.position;
+  const pos = marker.position ?? marker;
   const lat = typeof pos.lat === "function" ? pos.lat() : pos.lat;
   const lng = typeof pos.lng === "function" ? pos.lng() : pos.lng;
   return { lat, lng };
@@ -214,13 +307,7 @@ function drawPolygon(args) {
   const positions = [...addresses.values()].map((v) => {
     return v.position;
   });
-  console.log(positions);
 
-  //if (args.polygon && geometry.poly.containsLocation(last, args.polygon)) {
-  //  console.log("new address is within polygon, not drawing");
-  //  return;
-  //}
-  // TODO: try: find outer paths only, or sort points, or path union
   if (args.polygon) {
     args.polygon.setPaths(positions);
   } else {
@@ -273,10 +360,75 @@ function shuffleMap(map) {
   return shuffled;
 }
 
-// Fisher-Yates shuffle algorithm:
-function shuffle(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    let j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
+function findCenter(args) {
+  const positions = [...args.addresses.values()].map((v) => {
+    return getPosition(v);
+  });
+
+  const points = positions.map((pos) => [pos.lng, pos.lat]);
+  const features = turf.points(points);
+  const center = turf.center(features);
+  const [lng, lat] = center.geometry.coordinates;
+
+  // center position
+  const pos = { lat, lng };
+  args.mapElement.innerMap.setCenter(pos);
+
+  // add center as a marker
+  //addMarker('center', pos, args)
+
+  // draw center circle
+  // compute area of polygon
+  const area = args.geometry.spherical.computeArea(positions);
+  // convert polygon to circle
+  const radius = Math.sqrt(area / Math.PI);
+  if (args.circle) {
+    args.circle.setRadius(radius);
+    args.circle.setCenter(pos);
+  } else {
+    args.circle = new google.maps.Circle({
+      center: pos,
+      radius: radius,
+      strokeColor: "#00FF00",
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      fillColor: "#00FF00",
+      fillOpacity: 0.35,
+      map: args.mapElement.innerMap,
+    });
   }
+}
+
+// broken: how to get a polygon out of locations?
+function findCenterOfMass(args) {
+  const points = positionsToTurfPoints(args.addresses);
+  const features = turf.polygon(points);
+  const center = turf.centerOfMass(features);
+
+  const [lng, lat] = center.geometry.coordinates;
+  args.mapElement.innerMap.setCenter({ lat, lng });
+
+  addMarker("centerOfMass", { lat, lng }, args);
+}
+
+// broken: how to get a polygon out of locations?
+function findCentroid(args) {
+  const points = positionsToTurfPoints(args.addresses);
+  const features = turf.polygon(points);
+  const center = turf.centroid(features);
+
+  const [lng, lat] = center.geometry.coordinates;
+  args.mapElement.innerMap.setCenter({ lat, lng });
+
+  addMarker("centroid", { lat, lng }, args);
+}
+
+// turf points: [lng, lat]
+function positionsToTurfPoints(addressMap) {
+  const points = [];
+  for (const [label, obj] of args.addresses) {
+    const position = getPosition(obj);
+    points.push([position.lng, position.lat]);
+  }
+  return points;
 }

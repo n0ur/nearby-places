@@ -46,10 +46,11 @@
         libraries: "places,geometry,marker,geocoding",
       });
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
   </head>
 
   <body>
-    <gmp-map zoom="13" map-id="DEMO_MAP_ID">
+    <gmp-map zoom="12" map-id="DEMO_MAP_ID">
       <div id="floating-panel" slot="control-block-start-inline-start">
         <input
           type="text"
@@ -65,7 +66,7 @@
           <option value="restaurant">Restaurant</option>
         </select>
         <input type="button" id="find" value="Find" />
-        <br />
+        <input type="button" id="place-clear" value="Clear Places" />
       </div>
       <div id="response-container" slot="control-block-start-inline-end">
         Addresses show here: (click to delete) <br />
