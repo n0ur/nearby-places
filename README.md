@@ -2,12 +2,7 @@
 
 [WIP]
 
-Finds nearby places between multiple locations.
-
-Users add location markers on the map, and the app tries to find places within the area of the given locations, such that either:
-
-- the places lie in the center for each of the locations, they are equally far from each of the locations.
-- or, the places lie closest to most of the locations.
+Given several locations on a map, the app searches for nearby places (via Google Maps) that minimize travel distance for everyone. For example, a group of friends is scattered across the city and wants to find a central meeting spot. The "center" is calculated using geometric median.
 
 ## Tools & Setup
 
