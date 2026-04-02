@@ -31,7 +31,26 @@ const args = {
   // get assigned after libraries load
   AdvancedMarkerElement: null,
   geometry: null,
+  socket: new WebSocket(window.WS_ENDPOINT),
 };
+
+args.socket.addEventListener("open", () => {
+  console.log("Connection is open");
+});
+
+args.socket.addEventListener("message", (event) => {
+  try {
+    const receivedData = JSON.parse(event.data);
+    console.log("Received JSON:", receivedData);
+  } catch (error) {
+    console.error("Error parsing JSON:", error);
+    console.log("Received data was:", event.data);
+  }
+});
+
+function sendToWs(data) {
+  args.socket.send(JSON.stringify(data));
+}
 
 async function initMap() {
   // load libraries
@@ -111,6 +130,8 @@ async function initMap() {
     removeAllPlaces(args);
     removeCircle(args);
   });
+
+  getCurrentPosition(args);
 }
 
 initMap();
@@ -130,6 +151,8 @@ function getCurrentPosition(args) {
       args.mapElement.innerMap.setCenter(pos);
       args.addresses.set("current", { position: pos, marker: null });
       //addMarker("default", pos, args);
+
+      sendToWs({ position: pos });
     },
     () => {
       handleLocationError(true);
