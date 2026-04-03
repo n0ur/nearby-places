@@ -19,6 +19,9 @@ const data = {
   },
 };
 
+const code = location.pathname.split("/").at(-1);
+const wsUrl = new URL(window.WS_ENDPOINT + "/" + code);
+
 const args = {
   addresses: new Map(),
   places: new Map(),
@@ -31,7 +34,7 @@ const args = {
   // get assigned after libraries load
   AdvancedMarkerElement: null,
   geometry: null,
-  socket: new WebSocket(window.WS_ENDPOINT),
+  socket: new WebSocket(wsUrl),
 };
 
 args.socket.addEventListener("open", () => {
@@ -152,7 +155,7 @@ function getCurrentPosition(args) {
       args.addresses.set("current", { position: pos, marker: null });
       //addMarker("default", pos, args);
 
-      sendToWs({ position: pos });
+      sendToWs({ type: "position", payload: pos });
     },
     () => {
       handleLocationError(true);
