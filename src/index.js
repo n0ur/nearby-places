@@ -4,6 +4,8 @@ import fastifyWs from "@fastify/websocket";
 import path from "node:path";
 import { client } from "./gmapsClient.js";
 import { readFileSync } from "node:fs";
+import crypto from "node:crypto";
+import { Session } from "./session.js";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -27,18 +29,64 @@ fastify.register(fastifyStatic, {
 
 fastify.register(fastifyWs);
 
+const sessions = new Map();
+
 fastify.register(async function (fastify) {
-  fastify.get("/addr", { websocket: true }, (socket, req) => {
+  fastify.get("/ws/:code", { websocket: true }, (socket, req) => {
+    const session = sessions.get(req.params.code);
+    if (!session) {
+      throw new Error("Session not found");
+    }
+    const userSessionId = crypto.randomUUID();
+    session.addUser(userSessionId, socket);
+
     socket.on("message", (message) => {
       try {
         const data = JSON.parse(message.toString());
-        console.log("message received", data);
-        //socket.send(JSON.stringify({ status: 'ok', data: 'hi from server' }))
+        if (data.type === "position") {
+          session.savePosition(userSessionId, data.payload);
+        }
       } catch (e) {
-        console.error("Could not parse JSON:" + message.toString());
+        console.error("Could not parse JSON:");
+        console.error(e);
       }
     });
+
+    socket.on("close", () => {
+      sessions.delete(userSessionId);
+    });
   });
+});
+
+fastify.get("/map/:code", (req, res) => {
+  const code = req.params.code;
+  const html = readFileSync(
+    path.join(import.meta.dirname, "../static/map.html"),
+    "utf8",
+  );
+
+  if (!sessions.get(code)) {
+    const session = new Session(code);
+    sessions.set(code, session);
+    session.on("user_joined", ({ payload }) => {
+      const { socket, id } = payload;
+      socket.send(JSON.stringify({ type: "connected", payload: id }));
+    });
+    session.on("position_saved", ({ payload }) => {
+      const { sockets, positions } = payload;
+      for (const socket of sockets) {
+        socket.send(
+          JSON.stringify({ type: "position_saved", payload: positions }),
+        );
+      }
+    });
+  }
+
+  const injected = html
+    .replace("{{GOOGLE_MAPS_API_KEY}}", process.env.GOOGLE_MAPS_API_KEY || "")
+    .replace("{{WS_ENDPOINT}}", process.env.WS_ENDPOINT || "");
+
+  res.type("text/html").send(injected);
 });
 
 fastify.get("/", (req, res) => {
@@ -46,12 +94,7 @@ fastify.get("/", (req, res) => {
     path.join(import.meta.dirname, "../static/index.html"),
     "utf8",
   );
-
-  const injected = html
-    .replace("{{GOOGLE_MAPS_API_KEY}}", process.env.GOOGLE_MAPS_API_KEY || "")
-    .replace("{{WS_ENDPOINT}}", process.env.WS_ENDPOINT || "");
-
-  res.type("text/html").send(injected);
+  res.type("text/html").send(html);
 });
 
 fastify.get(
