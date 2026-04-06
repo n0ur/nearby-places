@@ -1,4 +1,5 @@
 import { EventEmitter } from "node:events";
+import crypto from "node:crypto";
 
 export class Session extends EventEmitter {
   constructor(sessionId) {
@@ -7,38 +8,34 @@ export class Session extends EventEmitter {
     this.users = new Map();
   }
 
-  addUser(userSessionId, socket) {
-    if (this.users.get(userSessionId)) {
-      console.log("User already exists in sessions");
-      return this;
-    }
+  addUser(socket) {
+    const userSessionId = crypto.randomUUID();
     this.users.set(userSessionId, {
       id: userSessionId,
       position: null,
       socket,
     });
     this.emit("user_joined", { payload: { id: userSessionId, socket } });
-    return this;
+    return userSessionId;
   }
 
   deleteUser(userSessionId) {
     this.users.delete(userSessionId);
-    return this;
+    this.emit("user_left", { payload: { id: userSessionId } });
   }
 
   savePosition(userSessionId, position) {
     const currentUser = this.users.get(userSessionId);
     if (!currentUser) {
-      throw new Error("User session not found" + userSessionId);
+      throw new Error("User session not found: " + userSessionId);
     }
     currentUser.position = position;
     const sockets = [];
     const positions = [];
-    for (const [id, { socket, position }] of this.users) {
-      sockets.push(socket);
-      positions.push(position);
+    for (const [id, user] of this.users) {
+      sockets.push(user.socket);
+      positions.push(user.position);
     }
     this.emit("position_saved", { payload: { sockets, positions } });
-    return this;
   }
 }
