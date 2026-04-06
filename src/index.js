@@ -53,7 +53,7 @@ fastify.register(async function (fastify) {
     });
 
     socket.on("close", () => {
-      sessions.delete(userSessionId);
+      session.deleteUser(userSessionId);
     });
   });
 });
