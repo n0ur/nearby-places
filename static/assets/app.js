@@ -1,9 +1,9 @@
 const DEFAULT_ZOOM = 12;
 
-const CENTER_LOCATION = { lat: 52.4743213, lng: 13.4276562 };
+const DEFAULT_POSITION = { lat: 52.4743213, lng: 13.4276562 };
 const data = {
   //"schoenefeld": { position: { lat: 52.389, lng: 13.5037 } },
-  default: { position: CENTER_LOCATION, marker: null }, // hermannstr
+  default: { position: DEFAULT_POSITION, marker: null }, // hermannstr
   kreuzberg: { position: { lat: 52.4983442, lng: 13.4065791 }, marker: null },
   koepenick: {
     position: { lat: 52.44260689999999, lng: 13.5822741 },
@@ -23,6 +23,7 @@ const code = location.pathname.split("/").at(-1);
 const wsUrl = new URL(window.WS_ENDPOINT + "/" + code);
 
 const args = {
+  currentPosition: null,
   addresses: new Map(),
   places: new Map(),
   response: document.getElementById("response"),
@@ -57,9 +58,8 @@ function sendToWs(data) {
 
 async function initMap() {
   // load libraries
-  const [, geocoding, { AdvancedMarkerElement }, geometry] = await Promise.all([
+  const [, { AdvancedMarkerElement }, geometry] = await Promise.all([
     google.maps.importLibrary("maps"),
-    google.maps.importLibrary("geocoding"),
     google.maps.importLibrary("marker"),
     google.maps.importLibrary("geometry"),
   ]);
@@ -67,7 +67,6 @@ async function initMap() {
   args.AdvancedMarkerElement = AdvancedMarkerElement;
 
   // set the map
-  args.mapElement.innerMap.setCenter(CENTER_LOCATION);
   args.mapElement.innerMap.setOptions({
     mapTypeControl: false,
     fullscreenControl: false,
@@ -75,22 +74,27 @@ async function initMap() {
   });
 
   const inputText = document.getElementById("address");
-  const geocoder = new geocoding.Geocoder();
   document.getElementById("submit").addEventListener("click", () => {
-    geocoder
-      .geocode({ address: inputText.value })
-      .then((response) => {
-        const { results } = response;
-        const first = results[0];
-        if (args.addresses.get(first.formatted_address)) {
-          return;
+    const request = new Request("/geocode", {
+      method: "POST",
+      body: JSON.stringify({ address: inputText.value }),
+    });
+
+    fetch(request)
+      .then((res) => {
+        return res.json();
+      })
+      .then((data) => {
+        console.log("data", data);
+        if (data.statusCode >= 400) {
+          throw new Error(data.message);
         }
-        addMarker(first.formatted_address, first.geometry.location, args);
+        inputText.value = data.formatted_address;
+        setCurrentPosition(data.formatted_address, data.location, args);
       })
       .catch((e) => {
-        console.error(
-          "Geocode was not successful for the following reason: " + e,
-        );
+        inputText.value = "";
+        console.error(e);
       });
   });
 
@@ -151,25 +155,37 @@ function getCurrentPosition(args) {
         lat: position.coords.latitude,
         lng: position.coords.longitude,
       };
-      args.mapElement.innerMap.setCenter(pos);
-      args.addresses.set("current", { position: pos, marker: null });
-      //addMarker("default", pos, args);
-
-      sendToWs({ type: "position", payload: pos });
+      console.log("getCurrentPosition", pos);
+      setCurrentPosition("current", pos, args);
     },
     () => {
       handleLocationError(true);
+      console.log("default position", DEFAULT_POSITION);
+      setCurrentPosition("current", DEFAULT_POSITION, args);
     },
   );
 }
 
-function addMarker(label, position, args) {
-  const { AdvancedMarkerElement, mapElement, addresses } = args;
+function setCurrentPosition(label, pos, args) {
+  console.log("setCurrentPosition", label, pos);
+  if (args.currentPosition) {
+    // remove marker
+    args.currentPosition.marker.map = null;
+  }
+  const marker = addMarker(pos, args);
+  args.currentPosition = { label, position: getPosition(pos), marker };
+  sendToWs({ type: "position", payload: pos });
+}
+
+function addMarker(position, args) {
+  const { AdvancedMarkerElement, mapElement } = args;
   const marker = new AdvancedMarkerElement({ position });
   mapElement.append(marker);
-  addresses.set(label, { position, marker });
-  updateBounds(args);
-  renderAddresses(args);
+
+  const bounds = new google.maps.LatLngBounds();
+  bounds.extend(position);
+  mapElement.innerMap.setCenter(position);
+  return marker;
 }
 
 function removeCircle(args) {
