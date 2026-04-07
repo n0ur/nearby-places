@@ -5,6 +5,7 @@ import path from "node:path";
 import { client } from "./gmapsClient.js";
 import { readFileSync } from "node:fs";
 import { sessionManager } from "./sessionManager.js";
+import { getPosition } from "./helpers.js";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -86,6 +87,52 @@ fastify.get("/", (req, res) => {
   );
   res.type("text/html").send(html);
 });
+
+fastify.post(
+  "/geocode",
+  {
+    schema: {
+      body: {
+        type: "string",
+      },
+    },
+  },
+  async (req, reply) => {
+    try {
+      const { address } = JSON.parse(req.body);
+
+      if (!address?.trim()) {
+        return reply
+          .type("application/json; charset=utf-8")
+          .code(400)
+          .send(new Error("Empty address"));
+      }
+
+      const request = {
+        params: {
+          key: process.env.GOOGLE_MAPS_API_KEY,
+          address,
+        },
+      };
+
+      const { data } = await client.geocode(request);
+      if (data.status === "ZERO_RESULTS") {
+        return reply
+          .type("application/json; charset=utf-8")
+          .code(404)
+          .send(new Error("Location not found"));
+      }
+      const [first] = data.results;
+      return reply.send({
+        formatted_address: first.formatted_address,
+        location: getPosition(first.geometry.location),
+      });
+    } catch (e) {
+      console.error(e);
+      return reply.type("application/json; charset=utf-8").code(400).send(e);
+    }
+  },
+);
 
 fastify.get(
   "/find",
