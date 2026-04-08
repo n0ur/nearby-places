@@ -24,12 +24,47 @@ Given several locations on a map, the app searches for nearby places that minimi
 
 Data is stored in-memory (no database).
 
+### RoomManager
+
+Entity
+
+- rooms: Map<room_id, Room>
+
+Operations
+
+- createRoom(id)
+- deleteRoom(id)
+
+Events
+
+- room_created: `{ roomId }`
+- room_deleted: `{ roomId }`
+
 ### Room
+
+Entity
 
 - id: string (unique id)
 - users: Map<user_id, Location[]>
 
+Operations
+
+- joinRoom => returns userId
+- leaveRoom
+- createLocation(userId, address) => returns locationId
+- deleteLocation(locationId)
+- deleteLocations(userId)
+
+Events
+
+- user_joined: `{ roomId, userId }`
+- user_left: `{ roomId, userId }`
+- location_created `{ roomId, location: { id, position: { lng, lat }, isOwn: boolean } }`
+- location_deleted `{ roomId, locationId }`
+
 ### Location
+
+Entity
 
 - id: string (unique id)
 - user_id: string
@@ -39,16 +74,7 @@ Data is stored in-memory (no database).
 
 ### Backend
 
-- createRoom(id)
-- deleteRoom(id)
-- joinRoom(id) => returns userId
-- leaveRoom(id)
-- createLocation(roomId, userId, address) => returns locationId
-- deleteLocation(locationId)
-- deleteLocations(roomId, userId)
 - findPlaces(positions)
-- onLocationAdded
-- onLocationDeleted
 
 ### Frontend
 
@@ -56,8 +82,6 @@ Data is stored in-memory (no database).
 - createMarker(position)
 - deleteMarker(marker)
 - drawCircle
-- onLocationAdded
-- onLocationDeleted
 
 ### Join Flow
 
@@ -69,7 +93,7 @@ Data is stored in-memory (no database).
 
 Format: `event: <name>\ndata: <json>\n\n`
 
-- location_added: `{ id, lat, lng }`
+- location_created: `{ id, position: { lat, lng }, isOwn }`
 - location_deleted: `{ id }`
 - places: `[{ displayName, location, formattedAddress, googleMapsURI }]`
 
