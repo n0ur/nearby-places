@@ -1,8 +1,77 @@
 # nearby-places
 
-[WIP]
+Given several locations on a map, the app searches for nearby places that minimize travel distance for everyone. An example use case: a group of friends is scattered across the city and wants to find a central meeting spot.
 
-Given several locations on a map, the app searches for nearby places (via Google Maps) that minimize travel distance for everyone. For example, a group of friends is scattered across the city and wants to find a central meeting spot. The "center" is calculated using geometric median.
+## Requirements
+
+- Users join a room by navigating to `/room/<id>`. Rooms are auto-created when a user joins with a new ID.
+- Users add locations by searching an address (geocoding) or sharing their current position from the browser.
+- Users can delete their own locations (validation using userId).
+- All users in a room see the same set of locations in real-time.
+- Once a new location is added, the server sends nearby places of all locations via SSE to connected users.
+- Locations are automatically deleted when a user disconnects, e.g. refreshes the page.
+
+## API Endpoints
+
+| Method | Path                        | Description                                           |
+| ------ | --------------------------- | ----------------------------------------------------- |
+| GET    | `/room/:id/join`            | Join a room, returns userId                           |
+| POST   | `/room/:id/location`        | Create a location on the map, body: `{address: ".."}` |
+| DELETE | `/room/:id/location/:locId` | Delete a location from the map                        |
+| GET    | `/room/:id/events`          | SSE stream for real-time updates                      |
+
+## Data Model
+
+Data is stored in-memory (no database).
+
+### Room
+
+- id: string (unique id)
+- users: Map<user_id, Location[]>
+
+### Location
+
+- id: string (unique id)
+- user_id: string
+- position: { lat, lng }
+
+## Operations
+
+### Backend
+
+- createRoom(id)
+- deleteRoom(id)
+- joinRoom(id) => returns userId
+- leaveRoom(id)
+- createLocation(roomId, userId, address) => returns locationId
+- deleteLocation(locationId)
+- deleteLocations(roomId, userId)
+- findPlaces(positions)
+- onLocationAdded
+- onLocationDeleted
+
+### Frontend
+
+- initMap
+- createMarker(position)
+- deleteMarker(marker)
+- drawCircle
+- onLocationAdded
+- onLocationDeleted
+
+### Join Flow
+
+1. GET `/room/:id/join` -> Set-Cookie: userId=xxx
+2. Client connects to GET `/room/:id/events` (for Server-Sent Events)
+3. All subsequent requests use Cookie header automatically
+
+## Server-Sent Events Messages
+
+Format: `event: <name>\ndata: <json>\n\n`
+
+- location_added: `{ id, lat, lng }`
+- location_deleted: `{ id }`
+- places: `[{ displayName, location, formattedAddress, googleMapsURI }]`
 
 ## Tools & Setup
 
@@ -38,11 +107,3 @@ mapElement.fitBounds(bounds);
 ### Drawing on the map
 
 Shapes like polylines, polygons, circles and info windows can be drawn on the map.
-
-## Basic knowledge
-
-TODO
-
-## Geospatial algorithms
-
-TODO
