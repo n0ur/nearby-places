@@ -1,24 +1,30 @@
 # nearby-places
 
-Given several locations on a map, the app searches for nearby places that minimize travel distance for everyone. An example use case: a group of friends is scattered across the city and wants to find a central meeting spot.
+Given several locations on a map, the app searches for nearby places via Google Maps that minimize travel distance for everyone. An example use case: a group of friends is scattered across the city and wants to find a central meeting spot.
 
 ## Requirements
 
 - Users join a room by navigating to `/room/<id>`. Rooms are auto-created when a user joins with a new ID.
 - Users add locations by searching an address (geocoding) or sharing their current position from the browser.
-- Users can delete their own locations (validation using userId).
+- Users can delete their own locations.
 - All users in a room see the same set of locations in real-time.
 - Once a new location is added, the server sends nearby places of all locations via SSE to connected users.
-- Locations are automatically deleted when a user disconnects, e.g. refreshes the page.
+- A user's locations are automatically deleted when they disconnect, e.g. refreshes the page.
+
+### Join Flow
+
+1. GET `/room/:id/join` -> Set-Cookie: userId=xxx
+2. Client connects to GET `/room/:id/events` (for Server-Sent Events)
+3. All subsequent requests use Cookie header automatically
 
 ## API Endpoints
 
 | Method | Path                        | Description                                           |
 | ------ | --------------------------- | ----------------------------------------------------- |
-| GET    | `/room/:id/join`            | Join a room, returns userId                           |
-| POST   | `/room/:id/location`        | Create a location on the map, body: `{address: ".."}` |
-| DELETE | `/room/:id/location/:locId` | Delete a location from the map                        |
+| GET    | `/room/:id/join`            | Join a room                                           |
 | GET    | `/room/:id/events`          | SSE stream for real-time updates                      |
+| POST   | `/room/:id/location`        | Create a location on the map, body: address as string |
+| DELETE | `/room/:id/location/:locId` | Delete a location from the map                        |
 
 ## Data Model
 
@@ -35,7 +41,7 @@ Operations
 - createRoom(id)
 - deleteRoom(id)
 
-Events
+Events emitted
 
 - room_created: `{ roomId }`
 - room_deleted: `{ roomId }`
@@ -45,22 +51,23 @@ Events
 Entity
 
 - id: string (unique id)
-- users: Map<user_id, Location[]>
+- users: Map<user_id, { locations: Location[], reply: Fastify.Reply }>
 
 Operations
 
 - joinRoom => returns userId
 - leaveRoom
-- createLocation(userId, address) => returns locationId
+- createLocation(userId, address)
 - deleteLocation(locationId)
-- deleteLocations(userId)
+- deleteUser(userId)
+- [ ] TODO: findPlaces(locations)
 
-Events
+Events emitted
 
 - user_joined: `{ roomId, userId }`
 - user_left: `{ roomId, userId }`
-- location_created `{ roomId, location: { id, position: { lng, lat }, isOwn: boolean } }`
-- location_deleted `{ roomId, locationId }`
+- location_created: `{ event: location_created, data: { id, position: { lat, lng }, formatted_address } }`
+- location_deleted: `{ event: location_deleted, data: { id, position: { lat, lng }, formatted_address } }`
 
 ### Location
 
@@ -69,25 +76,16 @@ Entity
 - id: string (unique id)
 - user_id: string
 - position: { lat, lng }
+- formatted_address: string
 
-## Operations
+## Frontend
 
-### Backend
-
-- findPlaces(positions)
-
-### Frontend
+TODO
 
 - initMap
 - createMarker(position)
 - deleteMarker(marker)
 - drawCircle
-
-### Join Flow
-
-1. GET `/room/:id/join` -> Set-Cookie: userId=xxx
-2. Client connects to GET `/room/:id/events` (for Server-Sent Events)
-3. All subsequent requests use Cookie header automatically
 
 ## Server-Sent Events Messages
 
