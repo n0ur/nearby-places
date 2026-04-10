@@ -16,10 +16,10 @@
         padding: 16px 8px;
         background: #eee;
       }
-      #session-wrapper {
+      #room-wrapper {
         padding: 16px 8px;
       }
-      #enter-session {
+      #enter-room {
         background-color: #1a73e8;
         color: white;
         border: 0;
@@ -30,7 +30,7 @@
         margin-right: 8px;
         padding: 0 15px;
       }
-      #session-id {
+      #room-id {
         padding: 10px;
         margin: 5px 0;
         box-sizing: border-box;
@@ -42,22 +42,20 @@
   <body>
     <header>Nearby places</header>
 
-    <form id="session-wrapper">
-      Session ID: <input type="text" id="session-id" value="" />
-      <input type="submit" id="enter-session" value="Enter" />
+    <form id="room-wrapper">
+      Room ID: <input type="text" id="room-id" value="" />
+      <input type="submit" id="enter-room" value="Enter" />
     </form>
   </body>
 
   <script>
     const shortId = Math.random().toString(36).slice(2, 12);
-    document.getElementById("session-id").value = shortId;
-    document
-      .getElementById("session-wrapper")
-      .addEventListener("submit", (e) => {
-        const shortId = document.getElementById("session-id").value;
-        location.href = `/map/${shortId}`;
-        e.preventDefault();
-        return false;
-      });
+    document.getElementById("room-id").value = shortId;
+    document.getElementById("room-wrapper").addEventListener("submit", (e) => {
+      const shortId = document.getElementById("room-id").value;
+      location.href = `/room/${shortId}`;
+      e.preventDefault();
+      return false;
+    });
   </script>
 </html>

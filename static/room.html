@@ -11,7 +11,6 @@
         key: "{{GOOGLE_MAPS_API_KEY}}",
         v: "weekly",
       });
-      window.WS_ENDPOINT = "{{WS_ENDPOINT}}";
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
   </head>
@@ -24,24 +23,8 @@
           id="address"
           placeholder="Enter an address or click the map to reverse geocode."
         />
-        <br />
         <input type="button" id="submit" value="Geocode" />
         <input type="button" id="clear" value="Clear" />
-        <select id="place-type">
-          <option value="bar">Bar</option>
-          <option value="cafe">Cafe</option>
-          <option value="restaurant">Restaurant</option>
-        </select>
-        <input type="button" id="find" value="Find" />
-        <input type="button" id="place-clear" value="Clear Places" />
-      </div>
-      <div id="response-container" slot="control-block-start-inline-end">
-        Addresses show here: (click to delete) <br />
-        <div id="response"></div>
-      </div>
-      <div id="results-container" slot="control-block-start-inline-end">
-        Results: <br />
-        <div id="results"></div>
       </div>
     </gmp-map>
     <script src="../app.js"></script>
