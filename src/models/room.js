@@ -34,17 +34,28 @@ export class Room extends EventEmitter {
       }
       reply.sse.send({
         data: { event, data },
+        retry: 1000,
       });
     });
-    await Promise.all(promises);
+    // TODO: how to handle errors?
+    try {
+      await Promise.all(promises);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
-  //getLocations() {
-  //  return [...this.users.values()].flatMap(({ locations }) => locations.
-  //    id: location.id,
-  //    position: location.position,
-  //  }));
-  //}
+  getUserLocations(userId) {
+    this.validate(userId);
+    const user = this.users.get(userId);
+    return user.locations.map((l) => l.serialize());
+  }
+
+  getLocations() {
+    return [...this.users.values()].flatMap(({ locations }) =>
+      locations.map((l) => l.serialize()),
+    );
+  }
 
   createLocation(userId, position, formattedAddress) {
     this.validate(userId);

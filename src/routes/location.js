@@ -29,7 +29,7 @@ export async function locationRoutes(fastify) {
         data.location,
         data.formatted_address,
       );
-      return reply.send(location);
+      return reply.send(location.serialize());
     },
   );
 

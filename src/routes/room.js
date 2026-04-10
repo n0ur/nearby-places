@@ -32,20 +32,12 @@ export async function roomRoutes(fastify) {
       },
     });
 
-    const injected = readFileSync(
-      path.join(import.meta.dirname, "../../static/map.html"),
-      "utf8",
-    )
-      .replace("{{GOOGLE_MAPS_API_KEY}}", process.env.GOOGLE_MAPS_API_KEY || "")
-      .replace("{{WS_ENDPOINT}}", process.env.WS_ENDPOINT || "");
-
-    reply.type("text/html").send(injected);
-  });
-
-  fastify.get("/room/:id/join", (req, reply) => {
-    const roomId = req.params.id;
-    const room = roomManager.getRoom(roomId);
     const userId = room.joinRoom();
+
+    const injected = readFileSync(
+      path.join(import.meta.dirname, "../../static/room.html"),
+      "utf8",
+    ).replace("{{GOOGLE_MAPS_API_KEY}}", process.env.GOOGLE_MAPS_API_KEY || "");
 
     reply
       .setCookie("userId", userId, {
@@ -53,9 +45,10 @@ export async function roomRoutes(fastify) {
         signed: true,
       })
       .type("text/html")
-      .send("OK");
+      .send(injected);
   });
 
+  // how to do error handling for SSE
   fastify.get(
     "/room/:id/events",
     {
@@ -72,14 +65,23 @@ export async function roomRoutes(fastify) {
 
       reply.sse.keepAlive();
 
+      // TODO fix
+      for (const loc of room.getLocations()) {
+        await room.notifyUsers("location_created", loc);
+      }
+
       await reply.sse.send({
         data: { message: "Connected" },
         retry: 1000,
       });
 
-      reply.sse.onClose(() => {
+      reply.sse.onClose(async () => {
         console.log("Connection closed");
+        const locations = room.getUserLocations(userId);
         room.deleteUser(userId);
+        for (const loc of locations) {
+          await room.notifyUsers("location_deleted", loc);
+        }
       });
     },
   );

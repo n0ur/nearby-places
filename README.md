@@ -21,7 +21,7 @@ Given several locations on a map, the app searches for nearby places via Google 
 
 | Method | Path                        | Description                                           |
 | ------ | --------------------------- | ----------------------------------------------------- |
-| GET    | `/room/:id/join`            | Join a room                                           |
+| GET    | `/room/:id`                 | Join a room                                           |
 | GET    | `/room/:id/events`          | SSE stream for real-time updates                      |
 | POST   | `/room/:id/location`        | Create a location on the map, body: address as string |
 | DELETE | `/room/:id/location/:locId` | Delete a location from the map                        |
