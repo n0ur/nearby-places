@@ -1,4 +1,5 @@
 import path from "node:path";
+import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
 import { roomManager } from "../models/roomManager.js";
 import { validateSession } from "./hooks.js";
@@ -15,30 +16,16 @@ export async function roomRoutes(fastify) {
   fastify.get("/room/:id", (req, reply) => {
     const roomId = req.params.id;
 
-    const room = roomManager.createRoom(roomId, {
-      async onLocationCreated(data) {
-        console.log("Location created", data);
-        await room.notifyUsers("location_created", data);
-      },
-      async onLocationDeleted(data) {
-        console.log("Location deleted", data);
-        await room.notifyUsers("location_deleted", data);
-      },
-      onUserJoined(user) {
-        console.log("User joined", user);
-      },
-      onUserLeft(user) {
-        console.log("User left", user);
-      },
-    });
-
-    const userId = room.joinRoom();
+    if (!roomManager.hasRoom(roomId)) {
+      roomManager.createRoom(roomId);
+    }
 
     const injected = readFileSync(
       path.join(import.meta.dirname, "../../static/room.html"),
       "utf8",
     ).replace("{{GOOGLE_MAPS_API_KEY}}", process.env.GOOGLE_MAPS_API_KEY || "");
 
+    const userId = crypto.randomUUID();
     reply
       .setCookie("userId", userId, {
         path: "/",
@@ -60,16 +47,12 @@ export async function roomRoutes(fastify) {
       },
     },
     async (req, reply) => {
-      const { userId, room } = req; // set in preHandler
-      room.setReply(userId, reply);
+      const { userId, room } = req;
+
+      room.registerUser(userId, reply.sse);
+      room.joinRoom(userId);
 
       reply.sse.keepAlive();
-
-      // TODO fix
-      for (const loc of room.getLocations()) {
-        await room.notifyUsers("location_created", loc);
-      }
-
       await reply.sse.send({
         data: { message: "Connected" },
         retry: 1000,
@@ -77,11 +60,7 @@ export async function roomRoutes(fastify) {
 
       reply.sse.onClose(async () => {
         console.log("Connection closed");
-        const locations = room.getUserLocations(userId);
-        room.deleteUser(userId);
-        for (const loc of locations) {
-          await room.notifyUsers("location_deleted", loc);
-        }
+        room.leaveRoom(userId);
       });
     },
   );

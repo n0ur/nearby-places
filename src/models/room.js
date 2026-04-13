@@ -1,58 +1,47 @@
-import { EventEmitter } from "node:events";
 import { Location } from "./location.js";
 import { NotFoundError } from "./errors.js";
+import { NotificationService } from "../services/notificationService.js";
 
-// emits: user_joined, user_left, location_created, location_deleted
-export class Room extends EventEmitter {
+export class Room {
   constructor(roomId) {
-    super();
     this.id = roomId;
-    this.users = new Map();
+    this.notificationService = new NotificationService();
+    this.users = new Map(); // Map<userId, locations>
   }
 
-  joinRoom() {
-    const userId = crypto.randomUUID();
-    this.users.set(userId, {
-      locations: [],
-      reply: null,
+  registerUser(userId, sse) {
+    this.notificationService.createUser(userId, sse);
+  }
+
+  joinRoom(userId) {
+    this.users.set(userId, []);
+    const locations = this.getAllLocations();
+    this.notificationService.notify("user_joined", {
+      roomId: this.id,
+      userId,
+      locations,
     });
-    this.emit("user_joined", { roomId: this.id, userId });
     return userId;
   }
 
   leaveRoom(userId) {
     this.validate(userId);
+    const locations = this.users.get(userId).map((l) => l.serialize());
     this.users.delete(userId);
-    this.emit("user_left", { roomId: this.id, userId });
-  }
-
-  async notifyUsers(event, data) {
-    const promises = [...this.users.values()].map(({ reply }) => {
-      if (reply === null) {
-        console.log("Reply is null ... /events was not called?");
-        return;
-      }
-      reply.sse.send({
-        data: { event, data },
-        retry: 1000,
-      });
+    this.notificationService.notify("user_left", {
+      roomId: this.id,
+      userId,
+      locations,
     });
-    // TODO: how to handle errors?
-    try {
-      await Promise.all(promises);
-    } catch (e) {
-      console.error(e);
-    }
   }
 
   getUserLocations(userId) {
     this.validate(userId);
-    const user = this.users.get(userId);
-    return user.locations.map((l) => l.serialize());
+    return this.users.get(userId).map((l) => l.serialize());
   }
 
-  getLocations() {
-    return [...this.users.values()].flatMap(({ locations }) =>
+  getAllLocations() {
+    return [...this.users.values()].flatMap((locations) =>
       locations.map((l) => l.serialize()),
     );
   }
@@ -65,19 +54,17 @@ export class Room extends EventEmitter {
       position,
       formattedAddress,
     );
-
-    const { locations } = this.users.get(userId);
-    locations.push(location);
-
-    this.emit("location_created", location.serialize());
-
+    this.users.get(userId).push(location);
+    this.notificationService.notify("location_created", {
+      locations: [location.serialize()],
+    });
     return location;
   }
 
   deleteLocation(userId, locationId) {
     this.validate(userId);
 
-    const { reply, locations } = this.users.get(userId);
+    const locations = this.users.get(userId);
 
     let found = null;
     const filtered = locations.filter((location) => {
@@ -90,12 +77,9 @@ export class Room extends EventEmitter {
       throw new NotFoundError("Location not found");
     }
 
-    this.users.set(userId, {
-      reply,
-      locations: filtered,
-    });
+    this.users.set(userId, filtered);
 
-    this.emit("location_deleted", found);
+    this.notificationService.notify("location_deleted", { locations: [found] });
   }
 
   deleteUser(userId) {
@@ -110,16 +94,6 @@ export class Room extends EventEmitter {
   userHasLocation(userId, locationId) {
     const { locations } = this.users.get(userId);
     return locations.includes((loc) => loc.id === locationId);
-  }
-
-  setReply(userId, reply) {
-    this.validate(userId);
-
-    this.users.set(userId, {
-      ...this.users.get(userId),
-      reply,
-    });
-    this.emit("data_updated", { userId });
   }
 
   validate(userId) {
