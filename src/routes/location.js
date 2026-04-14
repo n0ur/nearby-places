@@ -1,6 +1,6 @@
 import { ValidationError } from "../models/errors.js";
 import { geocode } from "../services/gmaps.js";
-import { validateSession } from "./hooks.js";
+import { validateUserInRoom, validateSession } from "./hooks.js";
 import { roomManager } from "../models/roomManager.js";
 
 export async function locationRoutes(fastify) {
@@ -14,6 +14,7 @@ export async function locationRoutes(fastify) {
       },
       preHandler: async (req) => {
         const { userId, room } = validateSession(req, roomManager);
+        validateUserInRoom(room, userId);
         req.userId = userId;
         req.room = room;
         if (!req.body.trim()) {
@@ -38,6 +39,7 @@ export async function locationRoutes(fastify) {
     {
       preHandler: async (req) => {
         const { userId, room } = validateSession(req, roomManager);
+        validateUserInRoom(room, userId);
         req.userId = userId;
         req.room = room;
       },

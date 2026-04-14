@@ -9,8 +9,11 @@ export function validateSession(req, roomManager) {
     throw new UnauthorizedError("Room does not exist");
   }
   const room = roomManager.getRoom(req.params.id);
-  if (!room.hasUser(value)) {
+  return { userId: value, room };
+}
+
+export function validateUserInRoom(room, userId) {
+  if (!room.hasUser(userId)) {
     throw new UnauthorizedError("User is not part of the room");
   }
-  return { userId: value, room };
 }
