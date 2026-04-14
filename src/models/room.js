@@ -10,7 +10,11 @@ export class Room {
   }
 
   registerUser(userId, sse) {
-    this.notificationService.createUser(userId, sse);
+    this.notificationService.addListener(userId, sse);
+  }
+
+  deregisterUser(userId) {
+    this.notificationService.removeListener(userId);
   }
 
   joinRoom(userId) {
@@ -56,6 +60,7 @@ export class Room {
     );
     this.users.get(userId).push(location);
     this.notificationService.notify("location_created", {
+      userId,
       locations: [location.serialize()],
     });
     return location;
@@ -79,7 +84,10 @@ export class Room {
 
     this.users.set(userId, filtered);
 
-    this.notificationService.notify("location_deleted", { locations: [found] });
+    this.notificationService.notify("location_deleted", {
+      userId,
+      locations: [found],
+    });
   }
 
   deleteUser(userId) {

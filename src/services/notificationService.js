@@ -1,28 +1,30 @@
 export class NotificationService {
   constructor() {
-    this.users = new Map(); // <userId, reply>
+    this.listeners = new Map(); // <id, reply.sse>
   }
 
-  createUser(userId, sse) {
-    this.users.set(userId, sse);
+  addListener(id, sse) {
+    this.listeners.set(id, sse);
   }
 
-  deleteUser(userId) {
-    this.users.delete(userId);
+  removeListener(id) {
+    this.listeners.delete(id);
   }
 
   async notify(event, data) {
-    // TODO: fix self notification
-    const promises = [...this.users.values()].map((sse) => {
-      if (sse === null) {
-        console.log("Reply is null ... /events was not called?");
-        return;
-      }
-      sse.send({
-        data,
-        retry: 1000,
-      });
-    });
+    const { locations } = data;
+    const promises = this.listeners
+      .entries()
+      .map(([, sse]) => {
+        if (sse === null || !sse.isConnected) {
+          return;
+        }
+        return sse.send({
+          data: { event, data: { locations } },
+          retry: 1000,
+        });
+      })
+      .toArray();
     await Promise.all(promises);
   }
 }

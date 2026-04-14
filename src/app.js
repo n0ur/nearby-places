@@ -25,7 +25,7 @@ export const fastify = Fastify({
 await fastify.register(fastifySse);
 
 fastify.setErrorHandler((error, request, reply) => {
-  console.log(error);
+  request.log.error(error);
   const statusCode = error.statusCode || 500;
   reply.code(statusCode).send({
     error: error.name,
