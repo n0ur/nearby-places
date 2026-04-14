@@ -1,7 +1,7 @@
 const DEFAULT_ZOOM = 12;
 const DEFAULT_POSITION = { lat: 52.4743213, lng: 13.4276562 };
 const mapElement = document.querySelector("gmp-map");
-const locations = new Map();
+const locationsMap = new Map(); // Map<locationId, { marker }>
 
 let libMarker;
 
@@ -62,17 +62,18 @@ function setupEventSource() {
       console.error(e);
     }
 
-    if (!response.event) {
+    if (!response.event || !response.data) {
       return;
     }
 
-    const location = response.data;
+    const locations = response.data.locations;
     switch (response.event) {
       case "location_created":
-        createMarker(location);
+      case "user_joined":
+        createMarker(locations);
         break;
       case "location_deleted":
-        deleteMarker(location);
+        deleteMarker(locations);
         break;
       default:
         console.log("Unknown event: ", response.event);
@@ -80,35 +81,39 @@ function setupEventSource() {
   };
 }
 
-function createMarker({ id, position, formatted_address }) {
+function createMarker(locations) {
   const { AdvancedMarkerElement } = libMarker;
-  const marker = new AdvancedMarkerElement({
-    position,
-  });
-  mapElement.append(marker);
-
-  locations.set(id, { marker });
-  return marker;
+  for (const location of locations) {
+    const { id, position, formatted_address } = location;
+    const marker = new AdvancedMarkerElement({
+      position,
+    });
+    mapElement.append(marker);
+    locationsMap.set(id, { marker, formatted_address });
+  }
 }
 
-function deleteMarker({ id, position, formatted_address }) {
-  if (!locations.has(id)) {
-    console.error("Marker not found", id);
-  }
-  const { marker } = locations.get(id);
-  marker.map = null;
+function deleteMarker(locations) {
+  for (const location of locations) {
+    const { id } = location;
+    if (!locationsMap.has(id)) {
+      console.error("Marker not found", id);
+    }
+    const { marker } = locationsMap.get(id);
+    marker.map = null;
 
-  locations.delete(id);
+    locationsMap.delete(id);
+  }
 }
 
 function updateBounds() {
   const bounds = new google.maps.LatLngBounds();
-  for (const [, { marker }] of locations) {
+  for (const [, { marker }] of locationsMap) {
     bounds.extend(marker.position);
   }
   // When there's only one marker, fitBounds() zooms to the maximum zoom level
-  if (locations.size === 1) {
-    mapElement.innerMap.setCenter([...locations.values()][0].position);
+  if (locationsMap.size === 1) {
+    mapElement.innerMap.setCenter([...locationsMap.values()][0].position);
   } else {
     mapElement.innerMap.fitBounds(bounds);
   }
