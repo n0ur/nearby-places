@@ -12,7 +12,6 @@ export class NotificationService {
   }
 
   async notify(event, data) {
-    const { locations } = data;
     const promises = this.listeners
       .entries()
       .map(([, sse]) => {
@@ -20,7 +19,7 @@ export class NotificationService {
           return;
         }
         return sse.send({
-          data: { event, data: { locations } },
+          data: { event, data },
           retry: 1000,
         });
       })
