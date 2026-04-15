@@ -11,6 +11,7 @@ export class Location {
       id: this.id,
       position: this.position,
       formatted_address: this.formattedAddress,
+      userId: this.userId,
     };
   }
 }

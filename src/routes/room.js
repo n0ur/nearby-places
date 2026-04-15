@@ -54,7 +54,7 @@ export async function roomRoutes(fastify) {
 
       reply.sse.keepAlive();
       await reply.sse.send({
-        data: { message: "Connected" },
+        data: { event: "connected", data: { userId } },
         retry: 1000,
       });
 

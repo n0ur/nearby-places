@@ -9,11 +9,12 @@ const instance = axios.create({
 
 const client = new Client(instance);
 
-export async function geocode(address) {
+// params: { address: string }
+export async function geocode(params) {
   const request = {
     params: {
       key: process.env.GOOGLE_MAPS_API_KEY,
-      address,
+      ...params,
     },
   };
 

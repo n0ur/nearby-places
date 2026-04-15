@@ -1,15 +1,27 @@
-import { ValidationError } from "../models/errors.js";
 import { geocode } from "../services/gmaps.js";
 import { validateUserInRoom, validateSession } from "./hooks.js";
 import { roomManager } from "../models/roomManager.js";
 
 export async function locationRoutes(fastify) {
   fastify.post(
-    "/room/:id/location",
+    "/room/:id/current_position",
     {
       schema: {
         body: {
-          type: "string",
+          type: "object",
+          properties: {
+            position: {
+              type: "object",
+              properties: {
+                lat: {
+                  type: "number",
+                },
+                lng: {
+                  type: "number",
+                },
+              },
+            },
+          },
         },
       },
       preHandler: async (req) => {
@@ -17,14 +29,40 @@ export async function locationRoutes(fastify) {
         validateUserInRoom(room, userId);
         req.userId = userId;
         req.room = room;
-        if (!req.body.trim()) {
-          throw new ValidationError("Empty address");
-        }
-        req.address = req.body;
       },
     },
     async (req, reply) => {
-      const data = await geocode(req.address);
+      const location = req.room.createLocation(
+        req.userId,
+        req.body.position,
+        "Current position for:" + req.userId,
+      );
+      return reply.send(location.serialize());
+    },
+  );
+
+  fastify.post(
+    "/room/:id/location",
+    {
+      schema: {
+        body: {
+          type: "object",
+          properties: {
+            address: {
+              type: "string",
+            },
+          },
+        },
+      },
+      preHandler: async (req) => {
+        const { userId, room } = validateSession(req, roomManager);
+        validateUserInRoom(room, userId);
+        req.userId = userId;
+        req.room = room;
+      },
+    },
+    async (req, reply) => {
+      const data = await geocode(req.body);
       const location = req.room.createLocation(
         req.userId,
         data.location,
