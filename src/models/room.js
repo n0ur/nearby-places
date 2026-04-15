@@ -75,7 +75,9 @@ export class Room {
     const filtered = locations.filter((location) => {
       if (location.id === locationId) {
         found = location.serialize();
+        return false;
       }
+      return true;
     });
 
     if (found === null) {
