@@ -35,4 +35,25 @@ export async function geocode(params) {
   };
 }
 
-export function nearbyPlaces() {}
+// params: { radius: number, type: string, location: LatLng }
+// other params: { opennow: boolean, rankBy }
+export async function searchNearby(params) {
+  const request = {
+    params: {
+      key: process.env.GOOGLE_MAPS_API_KEY,
+      ...params,
+    },
+  };
+
+  let response;
+  try {
+    response = await client.placesNearby(request);
+  } catch (e) {
+    throw new ServiceError(e.response.data.error_message, e.status);
+  }
+
+  if (response.data.status === "ZERO_RESULTS") {
+    throw new NotFoundError("No places found");
+  }
+  return response.data.results;
+}
