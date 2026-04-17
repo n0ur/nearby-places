@@ -15,17 +15,60 @@
   </head>
 
   <body>
-    <gmp-map zoom="12" map-id="DEMO_MAP_ID">
-      <div id="floating-panel" slot="control-block-start-inline-start">
-        <input
-          type="text"
-          id="address"
-          placeholder="Enter an address or click the map to reverse geocode."
-        />
-        <input type="button" id="submit" value="Geocode" />
-        <input type="button" id="clear" value="Clear" />
+    <div class="container">
+      <gmp-map zoom="16" map-id="DEMO_MAP_ID"></gmp-map>
+      <div class="ui-panel">
+        <div class="tab">
+          <button class="tab-link" data-target="tabPlaces">Places</button>
+          <button class="tab-link" data-target="tabEvents">Events</button>
+        </div>
+
+        <div class="tab-content" id="tabEvents">
+          <h3>Events</h3>
+          <div class="events">
+            <ul>
+              <li>item</li>
+              <li>item</li>
+              <li>item</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tabPlaces">
+          <div class="controls">
+            <input
+              type="text"
+              class="query-input"
+              id="address"
+              placeholder="Enter an address"
+            />
+            <input
+              type="button"
+              id="submit"
+              class="controls-button"
+              value="Find me"
+            />
+            <input
+              type="button"
+              id="clear"
+              class="controls-button"
+              value="Clear"
+            />
+            <input
+              type="button"
+              id="search"
+              class="controls-button"
+              value="Search Places"
+            />
+          </div>
+          <div class="list-container">
+            <h3>Places</h3>
+            <div id="search-results"></div>
+          </div>
+        </div>
       </div>
-    </gmp-map>
+    </div>
+
     <script src="../app.js"></script>
   </body>
 </html>

@@ -7,6 +7,58 @@ let libMarker;
 let libMaps;
 let infoWindow;
 
+const exampleData = [
+  {
+    business_status: "OPERATIONAL",
+    geometry: {
+      location: {
+        lat: 52.520008,
+        lng: 13.404954,
+      },
+      viewport: {
+        northeast: {
+          lat: 52.5213579802915,
+          lng: 13.4063039802915,
+        },
+        southwest: {
+          lat: 52.5186600197085,
+          lng: 13.4036060197085,
+        },
+      },
+    },
+    icon: "https://maps.gstatic.com/mapfiles/place_api/icons/v1/png_71/cafe-71.png",
+    icon_background_color: "#FF9E67",
+    icon_mask_base_uri:
+      "https://maps.gstatic.com/mapfiles/place_api/icons/v2/cafe_pinlet",
+    name: "Sample Cafe Berlin",
+    opening_hours: {
+      open_now: true,
+    },
+    photos: [
+      {
+        height: 3024,
+        width: 4032,
+        photo_reference: "Aap_uEC...",
+        html_attributions: [
+          '<a href="https://maps.google.com/maps/contrib/123456789">User</a>',
+        ],
+      },
+    ],
+    place_id: "ChIJN1t_tDeuEmsRUsoyG83frY4",
+    plus_code: {
+      compound_code: "CWC8+R9 Berlin, Germany",
+      global_code: "9F4MCWC8+R9",
+    },
+    price_level: 2,
+    rating: 4.4,
+    reference: "ChIJN1t_tDeuEmsRUsoyG83frY4",
+    scope: "GOOGLE",
+    types: ["cafe", "food", "point_of_interest", "establishment"],
+    user_ratings_total: 128,
+    vicinity: "Alexanderplatz, Berlin",
+  },
+];
+
 async function initMap() {
   // load libraries
   libMaps = await google.maps.importLibrary("maps");
@@ -45,12 +97,42 @@ async function initMap() {
         console.error(e);
       });
   });
+
   document.getElementById("clear").addEventListener("click", () => {
     inputText.value = "";
   });
 
-  setupEventSource();
-  getCurrentPosition();
+  document.getElementById("search").addEventListener("click", () => {
+    const request = new Request(location.href + "/places", {
+      headers: new Headers({
+        "Content-Type": "application/json",
+      }),
+    });
+
+    fetch(request)
+      .then((res) => {
+        return res.json();
+      })
+      .then((data) => {
+        console.log(data);
+        listResults(data);
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+  });
+
+  document.querySelectorAll(".tab-link").forEach((el) => {
+    el.addEventListener("click", (event) => {
+      const id = event.target.getAttribute("data-target");
+      openTab(id);
+    });
+  });
+
+  openTab("tabPlaces");
+  listResults(exampleData);
+  //setupEventSource();
+  //getCurrentPosition();
 }
 
 initMap();
@@ -214,4 +296,35 @@ function setCurrentUser(userId) {
 
 function getCurrentUser() {
   return localStorage.getItem("currentUserId");
+}
+
+function openTab(id) {
+  const tabs = document.querySelectorAll(".tab-content");
+  tabs.forEach((t) => (t.style.display = "none"));
+
+  const links = document.querySelectorAll(".tab-link");
+  links.forEach((t) => {
+    t.className = t.className.replace(" active", "");
+    if (t.getAttribute("data-target") === id) {
+      t.className += " active";
+    }
+  });
+  document.getElementById(id).style.display = "block";
+}
+
+function listResults(data) {
+  const container = document.getElementById("search-results");
+
+  data.forEach((place) => {
+    const item = document.createElement("div");
+    item.className = "place-item";
+
+    item.innerHTML = `
+      <h3>${place.name}</h3>
+      <p>${place.vicinity}</p>
+      <p>⭐ ${place.rating ?? "N/A"}</p>
+    `;
+
+    container.appendChild(item);
+  });
 }
