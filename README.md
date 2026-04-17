@@ -26,6 +26,7 @@ Given several locations on a map, the app searches for nearby places via Google 
 | POST   | `/room/:id/current_position` | Share current position, body: { position: lat, lng } |
 | POST   | `/room/:id/location`         | Create a location on map, body: { address: string }  |
 | DELETE | `/room/:id/location/:locId`  | Delete a location from the map                       |
+| GET    | `/room/:id/places`           | Get nearby places of the submitted locations         |
 
 ## Data Model
 

@@ -1,12 +1,14 @@
 import { Location } from "./location.js";
 import { NotFoundError } from "./errors.js";
 import { NotificationService } from "../services/notificationService.js";
+import { searchNearby } from "../services/gmaps.js";
 
 export class Room {
   constructor(roomId) {
     this.id = roomId;
     this.notificationService = new NotificationService();
     this.users = new Map(); // Map<userId, locations>
+    this.nearbyPlaces = null;
   }
 
   registerUser(userId, sse) {
@@ -48,6 +50,21 @@ export class Room {
     return [...this.users.values()].flatMap((locations) =>
       locations.map((l) => l.serialize()),
     );
+  }
+
+  async getNearbyPlaces() {
+    if (this.nearbyPlaces) {
+      return this.nearbyPlaces;
+    }
+
+    const locations = this.getAllLocations();
+
+    this.nearbyPlaces = await searchNearby(locations, {
+      type: "bar",
+      radius: 1000,
+      opennow: true,
+    });
+    return this.nearbyPlaces;
   }
 
   createLocation(userId, position, formattedAddress) {

@@ -65,4 +65,19 @@ export async function roomRoutes(fastify) {
       });
     },
   );
+
+  fastify.get(
+    "/room/:id/places",
+    {
+      preHandler: async (req) => {
+        const { userId, room } = validateSession(req, roomManager);
+        req.userId = userId;
+        req.room = room;
+      },
+    },
+    async (req, reply) => {
+      const data = await req.room.getNearbyPlaces();
+      reply.type("application/json").send(data);
+    },
+  );
 }

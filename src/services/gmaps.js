@@ -1,7 +1,13 @@
 import axios from "axios";
 import { Client } from "@googlemaps/google-maps-services-js";
-import { NotFoundError, ServiceError } from "../models/errors.js";
+import {
+  NotFoundError,
+  ServiceError,
+  ValidationError,
+} from "../models/errors.js";
 import { getPosition } from "../helpers.js";
+import { center } from "@turf/center";
+import { points } from "@turf/helpers";
 
 const instance = axios.create({
   // timeout, headers, etc
@@ -35,12 +41,26 @@ export async function geocode(params) {
   };
 }
 
-// params: { radius: number, type: string, location: LatLng }
+// params: { type: string, locations }
 // other params: { opennow: boolean, rankBy }
-export async function searchNearby(params) {
+export async function searchNearby(locations, params) {
+  if (locations.length === 0) {
+    throw new ValidationError("No locations found, create one first.");
+  }
+
+  locations = locations.map((l) => [l.position.lng, l.position.lat]);
+
+  let location;
+  if (locations.length > 1) {
+    location = center(points(locations));
+  } else {
+    location = locations[0];
+  }
+
   const request = {
     params: {
       key: process.env.GOOGLE_MAPS_API_KEY,
+      location,
       ...params,
     },
   };
