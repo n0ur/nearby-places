@@ -48,13 +48,12 @@ export async function searchNearby(locations, params) {
     throw new ValidationError("No locations found, create one first.");
   }
 
-  locations = locations.map((l) => [l.position.lng, l.position.lat]);
-
   let location;
   if (locations.length > 1) {
-    location = center(points(locations));
+    const ps = locations.map((l) => [l.position.lng, l.position.lat]);
+    location = center(points(ps));
   } else {
-    location = locations[0];
+    location = locations[0].position;
   }
 
   const request = {

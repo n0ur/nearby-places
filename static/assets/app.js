@@ -131,7 +131,7 @@ async function initMap() {
 
   openTab("tabPlaces");
   listResults(exampleData);
-  //setupEventSource();
+  setupEventSource();
   //getCurrentPosition();
 }
 
