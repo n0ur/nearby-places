@@ -13,7 +13,7 @@ Given several locations on a map, the app searches for nearby places via Google 
 
 ### Join Flow
 
-1. GET `/room/:id/join` -> Set-Cookie: userId=xxx
+1. GET `/room/:id` -> Create a room if it doesn't exist, Set-Cookie: userId=xxx
 2. Client connects to GET `/room/:id/events` (for Server-Sent Events)
 3. All subsequent requests use Cookie header automatically
 
@@ -21,8 +21,8 @@ Given several locations on a map, the app searches for nearby places via Google 
 
 | Method | Path                         | Description                                          |
 | ------ | ---------------------------- | ---------------------------------------------------- |
-| GET    | `/room/:id`                  | Join a room                                          |
-| GET    | `/room/:id/events`           | SSE stream for real-time updates                     |
+| GET    | `/room/:id`                  | Create a room, set user ID                           |
+| GET    | `/room/:id/events`           | Join a room, SSE stream for real-time updates        |
 | POST   | `/room/:id/current_position` | Share current position, body: { position: lat, lng } |
 | POST   | `/room/:id/location`         | Create a location on map, body: { address: string }  |
 | DELETE | `/room/:id/location/:locId`  | Delete a location from the map                       |
@@ -45,8 +45,11 @@ Operations
 
 Events emitted
 
-- room_created: `{ roomId }`
-- room_deleted: `{ roomId }`
+```
+{ event: "room_created", data: { roomId } }
+
+{ event: "room_deleted", data: { roomId } }
+```
 
 ### Room
 
@@ -57,19 +60,28 @@ Entity
 
 Operations
 
-- joinRoom => returns userId
+- registerUser
+- deregisterUser
+- joinRoom
 - leaveRoom
-- createLocation(userId, address)
-- deleteLocation(locationId)
-- deleteUser(userId)
-- [ ] TODO: findPlaces(locations)
+- getUserLocations
+- getAllLocations
+- getNearbyPlaces()
+- createLocation
+- deleteLocation
+- deleteUser
 
 Events emitted
 
-- user_joined: `{ roomId, userId }`
-- user_left: `{ roomId, userId }`
-- location_created: `{ event: location_created, data: { id, position: { lat, lng }, formatted_address } }`
-- location_deleted: `{ event: location_deleted, data: { id, position: { lat, lng }, formatted_address } }`
+```
+{ event: "user_joined", data: { roomId, userId, locations: allLocations } }
+
+{ event: "user_left", data: { roomId, userId, locations: usersLocations } }
+
+{ event: "location_created", data: { userId, locations: [createdLocation] } }
+
+{ event: "location_deleted", data: { userId, locations: [deletedLocation] } }
+```
 
 ### Location
 
@@ -88,14 +100,6 @@ TODO
 - createMarker(position)
 - deleteMarker(marker)
 - drawCircle
-
-## Server-Sent Events Messages
-
-Format: `event: <name>\ndata: <json>\n\n`
-
-- location_created: `{ id, position: { lat, lng }, isOwn }`
-- location_deleted: `{ id }`
-- places: `[{ displayName, location, formattedAddress, googleMapsURI }]`
 
 ## Tools & Setup
 
