@@ -34,6 +34,7 @@ export class Room {
     this.validate(userId);
     const locations = this.users.get(userId).map((l) => l.serialize());
     this.users.delete(userId);
+    this.nearbyPlaces = null;
     this.notificationService.notify("user_left", {
       roomId: this.id,
       userId,
@@ -76,6 +77,7 @@ export class Room {
       formattedAddress,
     );
     this.users.get(userId).push(location);
+    this.nearbyPlaces = null;
     this.notificationService.notify("location_created", {
       userId,
       locations: [location.serialize()],
@@ -103,6 +105,7 @@ export class Room {
 
     this.users.set(userId, filtered);
 
+    this.nearbyPlaces = null;
     this.notificationService.notify("location_deleted", {
       userId,
       locations: [found],

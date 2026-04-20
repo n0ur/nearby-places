@@ -71,12 +71,14 @@ async function initMap() {
         return res.json();
       })
       .then((data) => {
+        if (data.error) {
+          throw new Error(data.message);
+        }
         console.log(data);
         listResults(data);
       })
       .catch((e) => {
-        console.error(e);
-        document.getElementById("search-error").innerHTML = e.toString();
+        document.getElementById("search-error").innerHTML = e;
       })
       .finally(() => {
         document.getElementById("search-loading").style.display = "none";
