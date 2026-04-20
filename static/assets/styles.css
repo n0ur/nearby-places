@@ -63,11 +63,8 @@ gmp-map {
   flex-direction: column;
 }
 
-gmp-place-search {
-  width: 100%;
-  margin: 0;
-  border: none;
-  color-scheme: light;
+#search-loading {
+  display: none;
 }
 
 .controls {
