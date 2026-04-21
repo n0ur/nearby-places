@@ -1,15 +1,19 @@
-const DEFAULT_ZOOM = 16;
+const DEFAULT_ZOOM = 14;
 const DEFAULT_POSITION = { lat: 52.4743213, lng: 13.4276562 };
 const mapElement = document.querySelector("gmp-map");
+
 const locationsMap = new Map(); // Map<locationId, { marker }>
+const placesMarkers = [];
 
 let libMarker;
 let libMaps;
+let libCore;
 let infoWindow;
 let circle;
 
 async function initMap() {
   // load libraries
+  libCore = await google.maps.importLibrary("core");
   libMaps = await google.maps.importLibrary("maps");
   libMarker = await google.maps.importLibrary("marker");
 
@@ -75,8 +79,8 @@ async function initMap() {
         if (data.error) {
           throw new Error(data.message);
         }
-        console.log(data);
         listResults(data);
+        drawPlacesMarkers(data);
       })
       .catch((e) => {
         document.getElementById("search-error").innerHTML = e;
@@ -133,7 +137,6 @@ function setupEventSource() {
     }
 
     const { locations, circle } = response.data;
-    console.log(circle);
     switch (response.event) {
       case "connected":
         setCurrentUser(response.data.userId);
@@ -195,7 +198,10 @@ function createMarker(locations) {
     const isOwn = userId === currentUserId;
 
     const styles = isOwn
-      ? {}
+      ? {
+          background: "#5c98e7",
+          borderColor: "#137333",
+        }
       : {
           background: "#FBBC04",
           borderColor: "#137333",
@@ -250,10 +256,10 @@ function updateBounds() {
   if (locationsMap.size === 1) {
     const { marker } = [...locationsMap.values()][0];
     mapElement.innerMap.setCenter(marker.position);
+    mapElement.innerMap.setZoom(DEFAULT_ZOOM);
   } else {
-    mapElement.innerMap.fitBounds(bounds);
+    mapElement.innerMap.fitBounds(bounds, 300);
   }
-  mapElement.innerMap.setZoom(DEFAULT_ZOOM);
 }
 
 function setCurrentUser(userId) {
@@ -312,5 +318,65 @@ function drawCircle({ radius, center }) {
     radius,
     draggable: false,
     editable: false,
+  });
+}
+
+function drawPlacesMarkers(data) {
+  if (data.length === 0) {
+    return;
+  }
+
+  for (const marker of placesMarkers) {
+    marker.remove();
+  }
+
+  const bounds = new libCore.LatLngBounds();
+  data.forEach((place) => {
+    const location = place.geometry.location;
+    bounds.extend(location);
+    const marker = new libMarker.AdvancedMarkerElement({
+      map: mapElement.innerMap,
+      position: location,
+      title: place.name,
+    });
+
+    placesMarkers.push(marker);
+
+    // Build the content of the InfoWindow safely using DOM elements.
+    const content = document.createElement("div");
+
+    // address
+    const address = document.createElement("div");
+    address.textContent = place.vicinity || "";
+
+    // link
+    const link = document.createElement("a");
+    link.href =
+      "https://www.google.com/maps/place/?q=place_id:" + place.place_id;
+    link.target = "_blank";
+    link.textContent = "View Details on Google Maps";
+
+    // pic
+    //const img = document.createElement('img');
+    //img.src = place.photoUrl
+    //img.alt = place.name;
+
+    // content.appendChild(img);
+    content.appendChild(link);
+
+    marker.addListener("gmp-click", () => {
+      mapElement.innerMap.panTo(location);
+      updateInfoWindow(place.name, content, marker);
+    });
+  });
+
+  mapElement.innerMap.fitBounds(bounds, 100);
+}
+
+function updateInfoWindow(title, content, anchor) {
+  infoWindow.setContent(content);
+  infoWindow.setHeaderContent(title);
+  infoWindow.open({
+    anchor,
   });
 }

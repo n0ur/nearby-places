@@ -65,6 +65,10 @@ export class Room {
 
     const locations = this.getAllLocations();
     const circle = geometryService.calculateCircle(locations);
+    if (!circle) {
+      console.log("Could not calculate circle: No locations found?");
+      return [];
+    }
     this.nearbyPlaces = await searchNearby({
       location: circle.center,
       radius: circle.radius,
