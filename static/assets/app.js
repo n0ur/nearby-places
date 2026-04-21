@@ -6,6 +6,7 @@ const locationsMap = new Map(); // Map<locationId, { marker }>
 let libMarker;
 let libMaps;
 let infoWindow;
+let circle;
 
 async function initMap() {
   // load libraries
@@ -131,7 +132,8 @@ function setupEventSource() {
       return;
     }
 
-    const { locations } = response.data;
+    const { locations, circle } = response.data;
+    console.log(circle);
     switch (response.event) {
       case "connected":
         setCurrentUser(response.data.userId);
@@ -139,11 +141,13 @@ function setupEventSource() {
       case "location_created":
       case "user_joined":
         createMarker(locations);
+        circle && drawCircle(circle);
         updateBounds();
         break;
       case "location_deleted":
       case "user_left":
         deleteMarker(locations);
+        circle && drawCircle(circle);
         updateBounds();
         break;
       default:
@@ -288,5 +292,25 @@ function listResults(data) {
     `;
 
     container.appendChild(item);
+  });
+}
+
+function drawCircle({ radius, center }) {
+  if (circle) {
+    circle.setRadius(radius);
+    circle.setCenter(center);
+    return;
+  }
+  circle = new google.maps.Circle({
+    strokeColor: "#ffdd00ff",
+    strokeOpacity: 0.8,
+    strokeWeight: 2,
+    fillColor: "#ffdd00ff",
+    fillOpacity: 0.35,
+    map: mapElement.innerMap,
+    center,
+    radius,
+    draggable: false,
+    editable: false,
   });
 }

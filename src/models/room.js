@@ -2,6 +2,7 @@ import { Location } from "./location.js";
 import { NotFoundError } from "./errors.js";
 import { NotificationService } from "../services/notificationService.js";
 import { searchNearby } from "../services/gmaps.js";
+import { geometryService } from "../services/geometry.js";
 
 export class Room {
   constructor(roomId) {
@@ -22,10 +23,12 @@ export class Room {
   joinRoom(userId) {
     this.users.set(userId, []);
     const locations = this.getAllLocations();
+    const circle = geometryService.calculateCircle(locations);
     this.notificationService.notify("user_joined", {
       roomId: this.id,
       userId,
       locations,
+      circle,
     });
     return userId;
   }
@@ -35,10 +38,12 @@ export class Room {
     const locations = this.users.get(userId).map((l) => l.serialize());
     this.users.delete(userId);
     this.nearbyPlaces = null;
+    const circle = geometryService.calculateCircle(this.getAllLocations());
     this.notificationService.notify("user_left", {
       roomId: this.id,
       userId,
       locations,
+      circle,
     });
   }
 
@@ -59,11 +64,10 @@ export class Room {
     }
 
     const locations = this.getAllLocations();
-
-    this.nearbyPlaces = await searchNearby(locations, {
-      type: "bar",
-      radius: 1000,
-      opennow: true,
+    const circle = geometryService.calculateCircle(locations);
+    this.nearbyPlaces = await searchNearby({
+      location: circle.center,
+      radius: circle.radius,
     });
     return this.nearbyPlaces;
   }
@@ -78,9 +82,11 @@ export class Room {
     );
     this.users.get(userId).push(location);
     this.nearbyPlaces = null;
+    const circle = geometryService.calculateCircle(this.getAllLocations());
     this.notificationService.notify("location_created", {
       userId,
       locations: [location.serialize()],
+      circle,
     });
     return location;
   }
@@ -105,10 +111,12 @@ export class Room {
 
     this.users.set(userId, filtered);
 
+    const circle = geometryService.calculateCircle(this.getAllLocations());
     this.nearbyPlaces = null;
     this.notificationService.notify("location_deleted", {
       userId,
       locations: [found],
+      circle,
     });
   }
 
