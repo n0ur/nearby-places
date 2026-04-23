@@ -1,7 +1,7 @@
 import { Location } from "./location.js";
 import { NotFoundError } from "./errors.js";
 import { NotificationService } from "../services/notificationService.js";
-import { searchNearby } from "../services/gmaps.js";
+import { placesNearby } from "../services/gmaps.js";
 import { geometryService } from "../services/geometry.js";
 
 export class Room {
@@ -69,10 +69,11 @@ export class Room {
       console.log("Could not calculate circle: No locations found?");
       return [];
     }
-    this.nearbyPlaces = await searchNearby({
+    this.nearbyPlaces = await placesNearby({
       location: circle.center,
       radius: circle.radius,
     });
+
     return this.nearbyPlaces;
   }
 

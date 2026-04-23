@@ -1,13 +1,14 @@
 import axios from "axios";
 import { Client } from "@googlemaps/google-maps-services-js";
+import { PlacesClient } from "@googlemaps/places";
 import { NotFoundError, ServiceError } from "../models/errors.js";
 import { getPosition } from "../helpers.js";
 
-const instance = axios.create({
-  // timeout, headers, etc
-});
+const client = new Client(axios.create({}));
 
-const client = new Client(instance);
+const placesClient = new PlacesClient({
+  apiKey: process.env.GOOGLE_MAPS_API_KEY,
+});
 
 // params: { address: string }
 export async function geocode(params) {
@@ -36,7 +37,7 @@ export async function geocode(params) {
 }
 
 // params: { location, radius }
-export async function searchNearby(params) {
+export async function placesNearby(params) {
   const request = {
     params: {
       key: process.env.GOOGLE_MAPS_API_KEY,
@@ -50,12 +51,39 @@ export async function searchNearby(params) {
   try {
     response = await client.placesNearby(request);
   } catch (e) {
-    console.log("params", params);
-    throw new ServiceError(e.response.data.error_message, e.status);
+    if (e.response) {
+      throw new ServiceError(e.response.data.error_message, e.status);
+    }
+    throw new ServiceError(e);
   }
 
   if (response.data.status === "ZERO_RESULTS") {
     throw new NotFoundError("No places found");
   }
   return response.data.results;
+}
+
+export async function searchNearby(circle) {
+  const request = {
+    maxResultCount: 10,
+    //rankPreference: "DISTANCE",
+    locationRestriction: {
+      circle,
+    },
+    includedTypes: ["restaurant"],
+  };
+
+  let response;
+  try {
+    response = await placesClient.searchNearby(request, {
+      otherArgs: {
+        headers: {
+          "X-Goog-FieldMask": "places.displayName",
+        },
+      },
+    });
+    return response[0].places;
+  } catch (e) {
+    throw new ServiceError(e);
+  }
 }
