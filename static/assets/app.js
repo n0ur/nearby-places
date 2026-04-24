@@ -90,6 +90,10 @@ async function initMap() {
       });
   });
 
+  document.getElementById("get-position").addEventListener("click", () => {
+    getCurrentPosition();
+  });
+
   document.querySelectorAll(".tab-link").forEach((el) => {
     el.addEventListener("click", (event) => {
       const id = event.target.getAttribute("data-target");
@@ -97,9 +101,8 @@ async function initMap() {
     });
   });
 
-  openTab("tabPlaces");
+  openTab("tabLocations");
   setupEventSource();
-  getCurrentPosition();
 }
 
 initMap();
@@ -144,13 +147,15 @@ function setupEventSource() {
       case "location_created":
       case "user_joined":
         createMarker(locations);
-        circle && drawCircle(circle);
+        listLocations();
+        //circle && drawCircle(circle);
         updateBounds();
         break;
       case "location_deleted":
       case "user_left":
         deleteMarker(locations);
-        circle && drawCircle(circle);
+        listLocations();
+        //circle && drawCircle(circle);
         updateBounds();
         break;
       default:
@@ -219,17 +224,16 @@ function createMarker(locations) {
 
     const clickListener = () => {
       infoWindow.close();
-      // js + css + html in one line => fixme
-      const link = `<strong style="color:blue;text-transform:underline" onclick="deleteLink('${id}')">Delete</strong>`;
       // show delete button when it's the user's location
-      const contentString = marker.title + (isOwn ? `<p>${link}</p>` : "");
+      const contentString =
+        marker.title + (isOwn ? `<p>${getDeleteLink(id)}</p>` : "");
       infoWindow.setContent(contentString);
       infoWindow.open(marker.map, marker);
     };
     marker.addEventListener("gmp-click", clickListener);
 
     mapElement.append(marker);
-    locationsMap.set(id, { marker, formatted_address, clickListener });
+    locationsMap.set(id, { marker, formatted_address, clickListener, isOwn });
   }
 }
 
@@ -299,6 +303,25 @@ function listResults(data) {
 
     container.appendChild(item);
   });
+}
+
+function listLocations() {
+  const ownLocations = document.getElementById("locations-own");
+  const otherLocations = document.getElementById("locations-others");
+
+  let ownLocationsHtml = "";
+  let otherLocationsHtml = "";
+
+  for (const [id, { isOwn, formatted_address }] of locationsMap) {
+    if (isOwn) {
+      ownLocationsHtml += `<li>${formatted_address} - ${getDeleteLink(id)}</li>`;
+    } else {
+      otherLocationsHtml += `<li>${formatted_address}</li>`;
+    }
+  }
+
+  ownLocations.innerHTML = "<ul>" + ownLocationsHtml + "</ul>";
+  otherLocations.innerHTML = "<ul>" + otherLocationsHtml + "</ul>";
 }
 
 function drawCircle({ radius, center }) {
@@ -371,6 +394,10 @@ function drawPlacesMarkers(data) {
   });
 
   mapElement.innerMap.fitBounds(bounds, 100);
+}
+
+function getDeleteLink(id) {
+  return `<strong style="color:blue;text-transform:underline" onclick="deleteLink('${id}')">Delete</strong>`;
 }
 
 function updateInfoWindow(title, content, anchor) {

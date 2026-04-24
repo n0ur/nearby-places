@@ -58,6 +58,25 @@ gmp-map {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.panel-top {
+  height: 65%;
+  overflow: scroll;
+}
+
+.panel-content {
+  padding: 6px 12px;
+}
+
+.panel-bottom {
+  border-top: 5px solid #eee;
+}
+
+#events {
+  padding: 6px 12px;
+  height: 375px;
+  overflow: scroll;
+}
+
 .list-container {
   display: flex;
   flex-direction: column;
@@ -71,7 +90,9 @@ gmp-map {
   display: flex;
   flex-flow: row wrap;
   justify-content: space-between;
+  align-items: baseline;
 }
+
 .query-input {
   width: 100%;
   padding: 8px;
@@ -91,6 +112,11 @@ gmp-map {
 
 #submit {
   width: 65%;
+}
+
+#get-position {
+  margin-top: 10px;
+  width: 88%;
 }
 
 #clear {

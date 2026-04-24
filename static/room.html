@@ -18,54 +18,71 @@
     <div class="container">
       <gmp-map zoom="16" map-id="DEMO_MAP_ID"></gmp-map>
       <div class="ui-panel">
-        <div class="tab">
-          <button class="tab-link" data-target="tabPlaces">Places</button>
-          <button class="tab-link" data-target="tabEvents">Events</button>
-        </div>
+        <div class="panel-top">
+          <div class="tab">
+            <button class="tab-link" data-target="tabLocations">
+              Locations
+            </button>
+            <button class="tab-link" data-target="tabPlaces">Places</button>
+          </div>
 
-        <div class="tab-content" id="tabEvents">
-          <h3>Events</h3>
-          <div class="events">
-            <ul>
-              <li>item</li>
-              <li>item</li>
-              <li>item</li>
-            </ul>
+          <div class="tab-content" id="tabLocations">
+            <div class="controls">
+              <input
+                type="text"
+                class="query-input"
+                id="address"
+                placeholder="Enter an address"
+              />
+              <input
+                type="button"
+                id="submit"
+                class="controls-button"
+                value="Find address"
+              />
+              <input
+                type="button"
+                id="clear"
+                class="controls-button"
+                value="Clear"
+              />
+
+              <span><strong>Or</strong></span>
+              <input
+                type="button"
+                id="get-position"
+                class="controls-button"
+                value="Get my location"
+              />
+            </div>
+            <h3>Your Locations</h3>
+            <div id="locations-own"></div>
+            <h3>Other Locations</h3>
+            <div id="locations-others"></div>
+          </div>
+
+          <div class="tab-content" id="tabPlaces">
+            <div class="controls">
+              <input
+                type="button"
+                id="search"
+                class="controls-button"
+                value="Search Places"
+              />
+            </div>
+            <div class="list-container">
+              <h3>Places</h3>
+              <div id="search-error"></div>
+              <div id="search-loading">Loading...</div>
+              <div id="search-results"></div>
+            </div>
           </div>
         </div>
 
-        <div class="tab-content" id="tabPlaces">
-          <div class="controls">
-            <input
-              type="text"
-              class="query-input"
-              id="address"
-              placeholder="Enter an address"
-            />
-            <input
-              type="button"
-              id="submit"
-              class="controls-button"
-              value="Find me"
-            />
-            <input
-              type="button"
-              id="clear"
-              class="controls-button"
-              value="Clear"
-            />
-            <input
-              type="button"
-              id="search"
-              class="controls-button"
-              value="Search Places"
-            />
-          </div>
-          <div class="list-container">
-            <h3>Places</h3>
-            <div id="search-error"></div>
-            <div id="search-loading">Loading...</div>
-            <div id="search-results"></div>
+        <div class="panel-bottom">
+          <div class="panel-content">
+            <h3>Events</h3>
+            <div id="events"></div>
           </div>
         </div>
       </div>
