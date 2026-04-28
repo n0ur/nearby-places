@@ -198,7 +198,6 @@ function setupEventSource() {
         }
         const { userId, search, places } = response.data;
         if (userId !== getCurrentUser()) {
-          console.log("Found places, filling");
           listResults(places);
           drawPlacesMarkers(places);
           setSearchParams(search);
@@ -346,6 +345,7 @@ function openTab(id) {
 
 function listResults(data) {
   const container = document.getElementById("search-results");
+  container.innerHTML = "";
 
   data.forEach((place) => {
     const item = document.createElement("div");
