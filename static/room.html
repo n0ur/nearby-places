@@ -63,6 +63,37 @@
 
           <div class="tab-content" id="tabPlaces">
             <div class="controls">
+              <div class="controls-row">
+                <label>Radius</label>
+                <input
+                  type="text"
+                  class="input-radius"
+                  id="set-radius"
+                  value=""
+                />
+                <input
+                  type="button"
+                  id="submit-radius"
+                  class="controls-button"
+                  value="Set radius"
+                />
+              </div>
+              <div class="controls-row">
+                <label>Type</label>
+                <select id="set-type" class="controls-select">
+                  <option value="restaurant">Restaurant</option>
+                  <option value="bar">Bar</option>
+                  <option value="cafe">Cafe</option>
+                </select>
+              </div>
+              <div class="controls-row">
+                <label>Open now?</label>
+                <select id="set-opennow" class="controls-select">
+                  <option value="true">true</option>
+                  <option value="false">false</option>
+                </select>
+              </div>
+
               <input
                 type="button"
                 id="search"

@@ -9,7 +9,7 @@ let libMarker;
 let libMaps;
 let libCore;
 let infoWindow;
-let circle;
+let circleObj = { marker: null, center: null, radius: null };
 
 async function initMap() {
   // load libraries
@@ -61,7 +61,24 @@ async function initMap() {
   });
 
   document.getElementById("search").addEventListener("click", () => {
-    const request = new Request(location.href + "/places", {
+    let radius = document.getElementById("set-radius").value;
+    radius = parseFloat(radius);
+    if (isNaN(radius)) {
+      radius = 1000;
+    }
+
+    const opennow = document.getElementById("set-opennow").value;
+    const type = document.getElementById("set-type").value;
+
+    const queryParams = new URLSearchParams({
+      lng: circleObj.center.lng,
+      lat: circleObj.center.lat,
+      radius,
+      opennow,
+      type,
+    });
+
+    const request = new Request(location.href + "/places?" + queryParams, {
       headers: new Headers({
         "Content-Type": "application/json",
       }),
@@ -101,7 +118,18 @@ async function initMap() {
     });
   });
 
+  document.getElementById("submit-radius").addEventListener("click", () => {
+    let radius = document.getElementById("set-radius").value;
+    radius = parseFloat(radius);
+    if (isNaN(radius)) {
+      radius = 1000;
+    }
+    circleObj.radius = radius;
+    drawCircle();
+  });
+
   openTab("tabLocations");
+  //openTab("tabPlaces");
   setupEventSource();
 }
 
@@ -148,16 +176,37 @@ function setupEventSource() {
       case "user_joined":
         createMarker(locations);
         listLocations();
-        //circle && drawCircle(circle);
+        if (circle) {
+          circleObj.center = circle.center;
+          circleObj.radius = circle.radius;
+        }
         updateBounds();
         break;
       case "location_deleted":
       case "user_left":
         deleteMarker(locations);
         listLocations();
-        //circle && drawCircle(circle);
+        if (circle) {
+          circleObj.center = circle.center;
+          circleObj.radius = circle.radius;
+        }
         updateBounds();
         break;
+      case "places_found": {
+        if (response.data.error) {
+          throw new Error(response.data.message);
+        }
+        const { userId, search, places } = response.data;
+        if (userId !== getCurrentUser()) {
+          console.log("Found places, filling");
+          listResults(places);
+          drawPlacesMarkers(places);
+          setSearchParams(search);
+          circleObj.radius = search.radius;
+          drawCircle();
+        }
+        break;
+      }
       default:
         console.log("Unknown event: ", response.event);
     }
@@ -286,6 +335,13 @@ function openTab(id) {
     }
   });
   document.getElementById(id).style.display = "block";
+
+  if (id === "tabPlaces") {
+    drawCircle();
+    setSearchParams({ radius: circleObj.radius, opennow: null, type: null });
+  } else {
+    clearCircle();
+  }
 }
 
 function listResults(data) {
@@ -324,13 +380,19 @@ function listLocations() {
   otherLocations.innerHTML = "<ul>" + otherLocationsHtml + "</ul>";
 }
 
-function drawCircle({ radius, center }) {
-  if (circle) {
-    circle.setRadius(radius);
-    circle.setCenter(center);
+function drawCircle() {
+  const { radius, center } = circleObj;
+  if (!radius || !center) {
+    console.error("Circle radius or center is missing");
     return;
   }
-  circle = new google.maps.Circle({
+  if (circleObj.marker) {
+    circleObj.marker.setRadius(radius);
+    circleObj.marker.setCenter(center);
+    circleObj.marker.setMap(mapElement.innerMap);
+    return;
+  }
+  circleObj.marker = new google.maps.Circle({
     strokeColor: "#ffdd00ff",
     strokeOpacity: 0.8,
     strokeWeight: 2,
@@ -342,6 +404,24 @@ function drawCircle({ radius, center }) {
     draggable: false,
     editable: false,
   });
+}
+
+function clearCircle() {
+  if (circleObj.marker) {
+    circleObj.marker.setMap(null);
+  }
+}
+
+function setSearchParams({ radius, opennow, type }) {
+  if (radius) {
+    document.getElementById("set-radius").value = radius;
+  }
+  if (type) {
+    document.getElementById("set-type").value = type;
+  }
+  if (opennow !== null) {
+    document.getElementById("set-opennow").value = opennow;
+  }
 }
 
 function drawPlacesMarkers(data) {

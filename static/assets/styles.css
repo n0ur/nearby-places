@@ -93,8 +93,28 @@ gmp-map {
   align-items: baseline;
 }
 
+.controls-row {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.input-radius {
+  width: 50px;
+  padding: 8px;
+  margin-bottom: 10px;
+}
+
 .query-input {
   width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+.controls-select {
   padding: 8px;
   margin-bottom: 10px;
   box-sizing: border-box;
