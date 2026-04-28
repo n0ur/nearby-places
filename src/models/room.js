@@ -58,22 +58,14 @@ export class Room {
     );
   }
 
-  async getNearbyPlaces() {
-    if (this.nearbyPlaces) {
-      return this.nearbyPlaces;
-    }
-
-    const locations = this.getAllLocations();
-    const circle = geometryService.calculateCircle(locations);
-    if (!circle) {
-      console.log("Could not calculate circle: No locations found?");
-      return [];
-    }
-    this.nearbyPlaces = await placesNearby({
-      location: circle.center,
-      radius: circle.radius,
+  async getNearbyPlaces(userId, params) {
+    // TODO: add caching later
+    this.nearbyPlaces = await placesNearby(params);
+    this.notificationService.notify("places_found", {
+      userId,
+      search: params,
+      places: this.nearbyPlaces,
     });
-
     return this.nearbyPlaces;
   }
 

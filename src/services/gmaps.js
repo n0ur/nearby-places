@@ -41,8 +41,6 @@ export async function placesNearby(params) {
   const request = {
     params: {
       key: process.env.GOOGLE_MAPS_API_KEY,
-      opennow: true,
-      type: "bar",
       ...params,
     },
   };

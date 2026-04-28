@@ -69,6 +69,32 @@ export async function roomRoutes(fastify) {
   fastify.get(
     "/room/:id/places",
     {
+      schema: {
+        querystring: {
+          type: "object",
+          properties: {
+            radius: {
+              type: "number",
+            },
+            lat: {
+              type: "number",
+            },
+            lng: {
+              type: "number",
+            },
+            type: {
+              type: "string",
+              enum: ["restaurant", "bar", "cafe"],
+              default: "restaurant",
+            },
+            opennow: {
+              type: "boolean",
+              default: true,
+            },
+          },
+          required: ["radius", "lng", "lat"],
+        },
+      },
       preHandler: async (req) => {
         const { userId, room } = validateSession(req, roomManager);
         req.userId = userId;
@@ -76,7 +102,14 @@ export async function roomRoutes(fastify) {
       },
     },
     async (req, reply) => {
-      const data = await req.room.getNearbyPlaces();
+      const { lat, lng, opennow, radius, type } = req.query;
+      const params = {
+        location: { lng, lat },
+        radius,
+        type,
+        opennow,
+      };
+      const data = await req.room.getNearbyPlaces(req.userId, params);
       reply.type("application/json").send(data);
     },
   );
