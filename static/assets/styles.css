@@ -6,15 +6,7 @@ body {
 }
 
 body {
-  display: flex;
-  flex-direction: column;
   font-family: Arial, Helvetica, sans-serif;
-}
-
-.container {
-  display: flex;
-  height: 100vh;
-  width: 100%;
 }
 
 /** Tabs **/
@@ -50,17 +42,41 @@ body {
 /** Map **/
 gmp-map {
   flex-grow: 1;
+  height: 100%;
+}
+
+.ui-header {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 50px;
+  z-index: 1;
+  padding: 8px;
+  margin: 10px 0;
+  box-sizing: border-box;
+  background-color: #1a73e8;
+  color: white;
+  border: none;
+  cursor: pointer;
 }
 
 .ui-panel {
-  width: 400px;
+  display: none;
+  width: 320px;
+  height: 100%;
   overflow-y: auto;
   font-family: Arial, Helvetica, sans-serif;
+  position: absolute;
+  top: 60px;
+  right: 0;
+  z-index: 1;
+  background: white;
+  overflow: scroll;
 }
 
 .panel-top {
   height: 100%;
-  overflow: scroll;
 }
 
 .panel-content {

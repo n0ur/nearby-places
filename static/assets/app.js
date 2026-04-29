@@ -131,6 +131,11 @@ async function initMap() {
     drawCircle();
   });
 
+  document.getElementById("panel-toggle").addEventListener("click", () => {
+    const panel = document.getElementById("panel");
+    panel.style.display = panel.style.display === "block" ? "none" : "block";
+  });
+
   openTab("tabLocations");
   setupEventSource();
 }
