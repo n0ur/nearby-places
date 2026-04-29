@@ -24,10 +24,20 @@
               Locations
             </button>
             <button class="tab-link" data-target="tabPlaces">Places</button>
+            <button class="tab-link" data-target="tabEvents">Events</button>
           </div>
 
           <div class="tab-content" id="tabLocations">
             <div class="controls">
+              <input
+                type="button"
+                id="get-position"
+                class="controls-button"
+                value="Get my location"
+              />
+
+              <div class="or"><strong>Or</strong></div>
+
               <input
                 type="text"
                 class="query-input"
@@ -45,14 +55,6 @@
                 id="clear"
                 class="controls-button"
                 value="Clear"
-              />
-
-              <span><strong>Or</strong></span>
-              <input
-                type="button"
-                id="get-position"
-                class="controls-button"
-                value="Get my location"
               />
             </div>
             <h3>Your Locations</h3>
@@ -73,9 +75,15 @@
                 />
                 <input
                   type="button"
-                  id="submit-radius"
-                  class="controls-button"
-                  value="Set radius"
+                  id="radius-plus"
+                  class="controls-button radius-control"
+                  value="+"
+                />
+                <input
+                  type="button"
+                  id="radius-minus"
+                  class="controls-button radius-control"
+                  value="-"
                 />
               </div>
               <div class="controls-row">
@@ -108,10 +116,8 @@
               <div id="search-results"></div>
             </div>
           </div>
-        </div>
 
-        <div class="panel-bottom">
-          <div class="panel-content">
+          <div class="tab-content" id="tabEvents">
             <h3>Events</h3>
             <div id="events"></div>
           </div>

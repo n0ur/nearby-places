@@ -2,8 +2,8 @@ const DEFAULT_ZOOM = 14;
 const DEFAULT_POSITION = { lat: 52.4743213, lng: 13.4276562 };
 const mapElement = document.querySelector("gmp-map");
 
-const locationsMap = new Map(); // Map<locationId, { marker }>
-const placesMarkers = [];
+const locationsMap = new Map(); // Map<locationId, marker>
+const placesMap = new Map(); // Map<placeId, marker>
 
 let libMarker;
 let libMaps;
@@ -96,8 +96,7 @@ async function initMap() {
         if (data.error) {
           throw new Error(data.message);
         }
-        listResults(data);
-        drawPlacesMarkers(data);
+        listPlaces(data);
       })
       .catch((e) => {
         document.getElementById("search-error").innerHTML = e;
@@ -118,34 +117,33 @@ async function initMap() {
     });
   });
 
-  document.getElementById("submit-radius").addEventListener("click", () => {
-    let radius = document.getElementById("set-radius").value;
-    radius = parseFloat(radius);
-    if (isNaN(radius)) {
-      radius = 1000;
-    }
+  document.getElementById("radius-plus").addEventListener("click", () => {
+    const radius = getRadius() + 100;
+    document.getElementById("set-radius").value = radius;
+    circleObj.radius = radius;
+    drawCircle();
+  });
+
+  document.getElementById("radius-minus").addEventListener("click", () => {
+    const radius = getRadius() - 100;
+    document.getElementById("set-radius").value = radius;
     circleObj.radius = radius;
     drawCircle();
   });
 
   openTab("tabLocations");
-  //openTab("tabPlaces");
   setupEventSource();
 }
 
 initMap();
 
-/* eslint-disable no-unused-vars */
-function deleteLink(id) {
-  infoWindow.close();
-
-  const request = new Request(location.href + "/location/" + id, {
-    method: "DELETE",
-  });
-
-  fetch(request).catch((e) => {
-    console.error(e);
-  });
+function getRadius() {
+  const el = document.getElementById("set-radius");
+  let radius = parseFloat(el.value);
+  if (isNaN(radius)) {
+    radius = 1000;
+  }
+  return radius;
 }
 
 function setupEventSource() {
@@ -174,8 +172,7 @@ function setupEventSource() {
         break;
       case "location_created":
       case "user_joined":
-        createMarker(locations);
-        listLocations();
+        createLocations(locations);
         if (circle) {
           circleObj.center = circle.center;
           circleObj.radius = circle.radius;
@@ -184,8 +181,7 @@ function setupEventSource() {
         break;
       case "location_deleted":
       case "user_left":
-        deleteMarker(locations);
-        listLocations();
+        deleteLocations(locations);
         if (circle) {
           circleObj.center = circle.center;
           circleObj.radius = circle.radius;
@@ -198,8 +194,7 @@ function setupEventSource() {
         }
         const { userId, search, places } = response.data;
         if (userId !== getCurrentUser()) {
-          listResults(places);
-          drawPlacesMarkers(places);
+          listPlaces(places);
           setSearchParams(search);
           circleObj.radius = search.radius;
           drawCircle();
@@ -242,71 +237,139 @@ function getCurrentPosition() {
   );
 }
 
-function createMarker(locations) {
+function createLocations(locations) {
+  const ownLocations = document.getElementById("locations-own");
+  const otherLocations = document.getElementById("locations-others");
+
   const currentUserId = getCurrentUser();
-  const { AdvancedMarkerElement, PinElement } = libMarker;
-
   for (const location of locations) {
-    const { userId, id, position, formatted_address } = location;
-    const isOwn = userId === currentUserId;
+    const isOwn = location.userId === currentUserId;
 
-    const styles = isOwn
-      ? {
-          background: "#5c98e7",
-          borderColor: "#137333",
-        }
-      : {
-          background: "#FBBC04",
-          borderColor: "#137333",
-        };
-    const pin = new PinElement(styles);
-
-    const marker = new AdvancedMarkerElement({
-      position,
-      title: formatted_address,
-
-      gmpDraggable: true,
-      gmpClickable: true,
-    });
-    marker.append(pin);
-
-    const clickListener = () => {
-      infoWindow.close();
-      // show delete button when it's the user's location
-      const contentString =
-        marker.title + (isOwn ? `<p>${getDeleteLink(id)}</p>` : "");
-      infoWindow.setContent(contentString);
-      infoWindow.open(marker.map, marker);
-    };
-    marker.addEventListener("gmp-click", clickListener);
-
+    const marker = createMarker(location, isOwn);
     mapElement.append(marker);
-    locationsMap.set(id, { marker, formatted_address, clickListener, isOwn });
+    // create a marker, add it to the map, make it clickable
+    // create a list item, make the list item clickable, append it
+    // each list item has an id, when delete is clicked, its selected and deleted
+
+    locationsMap.set(location.id, marker);
+
+    const item = createLocationItem(
+      location,
+      (locationId) => {
+        locationsMap.get(locationId)?.click();
+      },
+      isOwn,
+    );
+
+    if (isOwn) {
+      ownLocations.appendChild(item);
+    } else {
+      otherLocations.appendChild(item);
+    }
   }
 }
 
-function deleteMarker(locations) {
-  for (const location of locations) {
-    const { id } = location;
-    if (!locationsMap.has(id)) {
-      console.error("Marker not found", id);
-    }
-    const { marker, clickListener } = locationsMap.get(id);
-    marker.map = null;
-    marker.removeEventListener(clickListener);
-    locationsMap.delete(id);
+function createLocationItem(location, onClick, isOwn) {
+  const item = document.createElement("div");
+  item.className = "place-item";
+  item.id = "place-" + location.id;
+  item.innerHTML = location.formatted_address;
+
+  if (isOwn) {
+    const del = document.createElement("strong");
+    del.innerHTML = " - Delete";
+    // delete a location
+    del.addEventListener("click", (e) => {
+      deleteLocationRequest(e, location.id);
+    });
+    item.appendChild(del);
   }
+
+  item.addEventListener("click", (e) => {
+    e.stopPropagation();
+    onClick(location.id);
+  });
+  return item;
+}
+
+function createMarker(location, isOwn) {
+  const { AdvancedMarkerElement, PinElement } = libMarker;
+  const { position, formatted_address } = location;
+
+  const marker = new AdvancedMarkerElement({
+    position,
+    title: formatted_address,
+
+    gmpDraggable: true,
+    gmpClickable: true,
+  });
+
+  const styles = isOwn
+    ? {
+        background: "#5c98e7",
+        borderColor: "#137333",
+      }
+    : {
+        background: "#FBBC04",
+        borderColor: "#137333",
+      };
+  const pin = new PinElement(styles);
+  marker.append(pin);
+
+  const clickListener = () => {
+    infoWindow.close();
+    infoWindow.setContent(marker.title);
+    infoWindow.open(marker.map, marker);
+  };
+  marker.addEventListener("gmp-click", clickListener);
+
+  return marker;
+}
+
+function deleteLocations(locations) {
+  for (const location of locations) {
+    if (!locationsMap.has(location.id)) {
+      console.error("Marker not found", location.id);
+    }
+
+    const marker = locationsMap.get(location.id);
+    marker.map = null;
+    locationsMap.delete(locations.id);
+
+    document.getElementById("place-" + location.id).remove();
+  }
+}
+
+function deleteLocationRequest(e, id) {
+  e.stopPropagation();
+  infoWindow.close();
+
+  const request = new Request(location.href + "/location/" + id, {
+    method: "DELETE",
+  });
+
+  fetch(request).catch((e) => {
+    console.error(e);
+  });
+}
+
+function updateInfoWindow(title, content, anchor) {
+  infoWindow.setContent(content);
+  infoWindow.setHeaderContent(title);
+  infoWindow.open({
+    anchor,
+  });
 }
 
 // TODO: needs improvement
 function updateBounds() {
   const bounds = new google.maps.LatLngBounds();
-  for (const [, { marker }] of locationsMap) {
+  for (const [, marker] of locationsMap) {
     bounds.extend(marker.position);
   }
   // When there's only one marker, fitBounds() zooms to the maximum zoom level
   if (locationsMap.size === 1) {
-    const { marker } = [...locationsMap.values()][0];
+    const marker = [...locationsMap.values()][0];
     mapElement.innerMap.setCenter(marker.position);
     mapElement.innerMap.setZoom(DEFAULT_ZOOM);
   } else {
@@ -343,41 +406,84 @@ function openTab(id) {
   }
 }
 
-function listResults(data) {
+function listPlaces(data) {
+  if (data.length === 0) {
+    return;
+  }
+
+  // clear list + markers
   const container = document.getElementById("search-results");
   container.innerHTML = "";
 
-  data.forEach((place) => {
-    const item = document.createElement("div");
-    item.className = "place-item";
-
-    item.innerHTML = `
-      <h3>${place.name}</h3>
-      <p>${place.vicinity}</p>
-      <p>⭐ ${place.rating ?? "N/A"}</p>
-    `;
-
-    container.appendChild(item);
-  });
-}
-
-function listLocations() {
-  const ownLocations = document.getElementById("locations-own");
-  const otherLocations = document.getElementById("locations-others");
-
-  let ownLocationsHtml = "";
-  let otherLocationsHtml = "";
-
-  for (const [id, { isOwn, formatted_address }] of locationsMap) {
-    if (isOwn) {
-      ownLocationsHtml += `<li>${formatted_address} - ${getDeleteLink(id)}</li>`;
-    } else {
-      otherLocationsHtml += `<li>${formatted_address}</li>`;
-    }
+  for (const [, marker] of placesMap) {
+    marker.remove();
   }
 
-  ownLocations.innerHTML = "<ul>" + ownLocationsHtml + "</ul>";
-  otherLocations.innerHTML = "<ul>" + otherLocationsHtml + "</ul>";
+  const bounds = new libCore.LatLngBounds();
+  data.forEach((place) => {
+    const location = place.geometry.location;
+
+    // extend map bounds
+    bounds.extend(location);
+
+    // create marker
+    const marker = new libMarker.AdvancedMarkerElement({
+      map: mapElement.innerMap,
+      position: location,
+      title: place.name,
+    });
+    marker.addListener("gmp-click", () => {
+      mapElement.innerMap.panTo(location);
+      updateInfoWindow(place.name, createWindowContent(place), marker);
+    });
+
+    // add it to map
+    placesMap.set(place.place_id, marker);
+
+    // add an item to the list
+    container.appendChild(
+      createPlaceItem(place, (placeId) => {
+        placesMap.get(placeId)?.click();
+      }),
+    );
+  });
+
+  mapElement.innerMap.fitBounds(bounds, 100);
+}
+
+function createPlaceItem(place, onClick) {
+  const item = document.createElement("div");
+  item.className = "place-item";
+
+  item.innerHTML = `
+    <h3>${place.name}</h3>
+    <p>${place.vicinity}</p>
+    <p>⭐ ${place.rating ?? "N/A"}</p>
+  `;
+
+  item.addEventListener("click", (e) => {
+    onClick(place.place_id);
+    e.stopPropagation();
+  });
+  return item;
+}
+
+function createWindowContent(place) {
+  // Build the content of the InfoWindow safely using DOM elements.
+  const content = document.createElement("div");
+
+  // address
+  const address = document.createElement("div");
+  address.textContent = place.vicinity || "";
+
+  // link
+  const link = document.createElement("a");
+  link.href = "https://www.google.com/maps/place/?q=place_id:" + place.place_id;
+  link.target = "_blank";
+  link.textContent = "View Details on Google Maps";
+  content.appendChild(link);
+
+  return content;
 }
 
 function drawCircle() {
@@ -422,68 +528,4 @@ function setSearchParams({ radius, opennow, type }) {
   if (opennow !== null) {
     document.getElementById("set-opennow").value = opennow;
   }
-}
-
-function drawPlacesMarkers(data) {
-  if (data.length === 0) {
-    return;
-  }
-
-  for (const marker of placesMarkers) {
-    marker.remove();
-  }
-
-  const bounds = new libCore.LatLngBounds();
-  data.forEach((place) => {
-    const location = place.geometry.location;
-    bounds.extend(location);
-    const marker = new libMarker.AdvancedMarkerElement({
-      map: mapElement.innerMap,
-      position: location,
-      title: place.name,
-    });
-
-    placesMarkers.push(marker);
-
-    // Build the content of the InfoWindow safely using DOM elements.
-    const content = document.createElement("div");
-
-    // address
-    const address = document.createElement("div");
-    address.textContent = place.vicinity || "";
-
-    // link
-    const link = document.createElement("a");
-    link.href =
-      "https://www.google.com/maps/place/?q=place_id:" + place.place_id;
-    link.target = "_blank";
-    link.textContent = "View Details on Google Maps";
-
-    // pic
-    //const img = document.createElement('img');
-    //img.src = place.photoUrl
-    //img.alt = place.name;
-
-    // content.appendChild(img);
-    content.appendChild(link);
-
-    marker.addListener("gmp-click", () => {
-      mapElement.innerMap.panTo(location);
-      updateInfoWindow(place.name, content, marker);
-    });
-  });
-
-  mapElement.innerMap.fitBounds(bounds, 100);
-}
-
-function getDeleteLink(id) {
-  return `<strong style="color:blue;text-transform:underline" onclick="deleteLink('${id}')">Delete</strong>`;
-}
-
-function updateInfoWindow(title, content, anchor) {
-  infoWindow.setContent(content);
-  infoWindow.setHeaderContent(title);
-  infoWindow.open({
-    anchor,
-  });
 }

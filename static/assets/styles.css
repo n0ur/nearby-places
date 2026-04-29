@@ -59,16 +59,12 @@ gmp-map {
 }
 
 .panel-top {
-  height: 65%;
+  height: 100%;
   overflow: scroll;
 }
 
 .panel-content {
   padding: 6px 12px;
-}
-
-.panel-bottom {
-  border-top: 5px solid #eee;
 }
 
 #events {
@@ -104,30 +100,39 @@ gmp-map {
 .input-radius {
   width: 50px;
   padding: 8px;
-  margin-bottom: 10px;
+  margin: 10px 0;
 }
 
 .query-input {
   width: 100%;
   padding: 8px;
-  margin-bottom: 10px;
+  margin: 10px 0;
   box-sizing: border-box;
 }
 
 .controls-select {
   padding: 8px;
-  margin-bottom: 10px;
+  margin: 10px 0;
   box-sizing: border-box;
+}
+
+.or {
+  width: 100%;
+  text-align: center;
 }
 
 .controls-button {
   padding: 8px;
-  margin-bottom: 10px;
+  margin: 10px 0;
   box-sizing: border-box;
   background-color: #1a73e8;
   color: white;
   border: none;
   cursor: pointer;
+}
+
+.radius-control {
+  width: 25%;
 }
 
 #submit {
@@ -136,7 +141,7 @@ gmp-map {
 
 #get-position {
   margin-top: 10px;
-  width: 88%;
+  width: 100%;
 }
 
 #clear {
@@ -149,4 +154,22 @@ gmp-map {
   width: 100%;
   color: #fff;
   background-color: #00674f;
+}
+
+.place-item {
+  padding: 8px;
+}
+.place-item h3 {
+  margin: 3px 0;
+}
+.place-item p {
+  margin: 8px 0;
+}
+
+.place-item:nth-child(odd) {
+  background-color: #eee;
+}
+
+.place-item:nth-child(odd) {
+  background-color: #eee;
 }
