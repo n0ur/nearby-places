@@ -22,9 +22,16 @@ export class Room {
 
   joinRoom(userId) {
     this.users.set(userId, []);
+    this.notificationService.notify("user_joined", {
+      roomId: this.id,
+      userId,
+      locations: [],
+      circle: null,
+    });
+
     const locations = this.getAllLocations();
     const circle = geometryService.calculateCircle(locations);
-    this.notificationService.notify("user_joined", {
+    this.notificationService.notifyId(userId, "location_created", {
       roomId: this.id,
       userId,
       locations,

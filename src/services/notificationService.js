@@ -11,6 +11,17 @@ export class NotificationService {
     this.listeners.delete(id);
   }
 
+  async notifyId(id, event, data) {
+    const sse = this.listeners.get(id);
+    if (sse === null || !sse.isConnected) {
+      return;
+    }
+    return sse.send({
+      data: { event, data },
+      retry: 1000,
+    });
+  }
+
   async notify(event, data) {
     const promises = this.listeners
       .entries()
