@@ -320,20 +320,12 @@ function updateInfoWindow(title, content, anchor) {
   });
 }
 
-// TODO: needs improvement
 function updateBounds() {
-  const bounds = new google.maps.LatLngBounds();
+  const bounds = new libCore.LatLngBounds();
   for (const [, marker] of locationsMap) {
     bounds.extend(marker.position);
   }
-  // When there's only one marker, fitBounds() zooms to the maximum zoom level
-  if (locationsMap.size === 1) {
-    const marker = [...locationsMap.values()][0];
-    mapElement.innerMap.setCenter(marker.position);
-    mapElement.innerMap.setZoom(DEFAULT_ZOOM);
-  } else {
-    mapElement.innerMap.fitBounds(bounds, 300);
-  }
+  mapElement.innerMap.fitBounds(bounds, 100);
 }
 
 function setCurrentUser(userId) {
