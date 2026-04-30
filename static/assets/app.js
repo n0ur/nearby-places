@@ -166,7 +166,16 @@ function setupEventSource() {
   const eventSource = new EventSource(location.href + "/events");
 
   eventSource.onerror = (error) => {
+    const el = document.getElementById("app-errors");
+    el.innerHTML = "App error, refresh page";
+    el.style.display = "block";
     console.error(error);
+    eventSource.close();
+  };
+
+  eventSource.onopen = () => {
+    const el = document.getElementById("app-errors");
+    el.style.display = "none";
   };
 
   eventSource.onmessage = (event) => {
@@ -243,9 +252,20 @@ function getCurrentPosition() {
         body: JSON.stringify({ position: pos }),
       });
 
-      fetch(request).catch((e) => {
-        console.error(e);
-      });
+      document.getElementById("address-error").innerHTML = "";
+      fetch(request)
+        .then((res) => {
+          return res.json();
+        })
+        .then((data) => {
+          if (data.error) {
+            throw new Error(data.message);
+          }
+          togglePanel("location");
+        })
+        .catch((e) => {
+          document.getElementById("address-error").innerHTML = e;
+        });
     },
     () => {
       console.error("Geolocation permissions denied, using default location");
