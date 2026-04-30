@@ -5,13 +5,14 @@ import fastifySse from "@fastify/sse";
 import path from "node:path";
 import { roomRoutes } from "./routes/room.js";
 import { locationRoutes } from "./routes/location.js";
+import { roomManager } from "./models/roomManager.js";
 
 const isDev = process.env.NODE_ENV !== "production";
 
 export const fastify = Fastify({
   logger: isDev
     ? {
-        level: "warn",
+        level: "info",
         transport: {
           target: "pino-pretty",
           options: {
@@ -23,6 +24,8 @@ export const fastify = Fastify({
 });
 
 await fastify.register(fastifySse);
+
+roomManager.setLogger(fastify.log.child({ component: "roomEvents" }));
 
 fastify.setErrorHandler((error, request, reply) => {
   request.log.error(error);

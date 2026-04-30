@@ -6,19 +6,26 @@ import { geometryService } from "../services/geometry.js";
 import { parsePosition } from "../helpers.js";
 
 export class Room {
-  constructor(roomId) {
+  constructor(roomId, logger) {
     this.id = roomId;
     this.notificationService = new NotificationService();
+    this.logger = logger;
     this.users = new Map(); // Map<userId, locations>
     this.nearbyPlaces = null;
   }
 
+  getLogger() {
+    return this.logger;
+  }
+
   registerUser(userId, sse) {
     this.notificationService.addListener(userId, sse);
+    this.getLogger().info(`User registered ${userId}`);
   }
 
   deregisterUser(userId) {
     this.notificationService.removeListener(userId);
+    this.getLogger().info(`User deregistered ${userId}`);
   }
 
   joinRoom(userId) {
@@ -29,6 +36,7 @@ export class Room {
       locations: [],
       circle: null,
     });
+    this.getLogger().info(`User joined ${userId}`);
 
     const locations = this.getAllLocations();
     const circle = geometryService.calculateCircle(locations);
@@ -38,6 +46,7 @@ export class Room {
       locations,
       circle,
     });
+    this.getLogger().info(`Sent locations to user ${userId}`);
     return userId;
   }
 
@@ -53,6 +62,7 @@ export class Room {
       locations,
       circle,
     });
+    this.getLogger().info(`User left ${userId}`);
   }
 
   getUserLocations(userId) {
@@ -90,9 +100,6 @@ export class Room {
         location.position.lng === position.lng,
     );
     if (exists) {
-      console.error(
-        `Found: ${JSON.stringify(exists)} while trying to add ${JSON.stringify(position)}`,
-      );
       throw new ValidationError("Location already exists.");
     }
 
@@ -110,6 +117,9 @@ export class Room {
       locations: [location.serialize()],
       circle,
     });
+    this.getLogger().info(
+      `Location created by ${userId}, ${JSON.stringify(position)}`,
+    );
     return location;
   }
 
@@ -140,11 +150,9 @@ export class Room {
       locations: [found],
       circle,
     });
-  }
-
-  deleteUser(userId) {
-    this.validate(userId);
-    this.users.delete(userId);
+    this.getLogger().info(
+      `Location deleted by ${userId}, ${JSON.stringify(found)}`,
+    );
   }
 
   hasUser(userId) {

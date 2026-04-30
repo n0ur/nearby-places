@@ -59,7 +59,6 @@ export async function roomRoutes(fastify) {
       });
 
       reply.sse.onClose(async () => {
-        console.log("Connection closed");
         room.leaveRoom(userId);
         room.deregisterUser(userId);
       });
