@@ -20,7 +20,9 @@ export const fastify = Fastify({
           },
         },
       }
-    : { level: "info" },
+    : {
+        level: "info",
+      },
 });
 
 await fastify.register(fastifySse);
@@ -48,6 +50,11 @@ fastify.register(fastifyCookie, {
 
 fastify.register(fastifyStatic, {
   root: path.join(import.meta.dirname, "../static/assets"),
+});
+
+await fastify.register(import("@fastify/rate-limit"), {
+  max: 40,
+  timeWindow: "1 minute",
 });
 
 fastify.register(roomRoutes);
