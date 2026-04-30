@@ -1,4 +1,3 @@
-const DEFAULT_ZOOM = 14;
 const DEFAULT_POSITION = { lat: 52.4743213, lng: 13.4276562 };
 const mapElement = document.querySelector("gmp-map");
 
@@ -30,6 +29,8 @@ async function initMap() {
   // elements
   const inputText = document.getElementById("address");
   document.getElementById("submit").addEventListener("click", () => {
+    document.getElementById("address-error").innerHTML = "";
+
     if (!inputText.value.trim()) {
       console.log("Empty search value");
       return;
@@ -48,12 +49,15 @@ async function initMap() {
         return res.json();
       })
       .then((data) => {
+        if (data.error) {
+          throw new Error(data.message);
+        }
         inputText.value = data.formatted_address;
         togglePanel("location");
       })
       .catch((e) => {
+        document.getElementById("address-error").innerHTML = e;
         inputText.value = "";
-        console.error(e);
       });
   });
 
