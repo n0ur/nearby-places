@@ -35,7 +35,7 @@ export async function locationRoutes(fastify) {
       const location = req.room.createLocation(
         req.userId,
         req.body.position,
-        "Current position for:" + req.userId,
+        "GPS",
       );
       return reply.send(location.serialize());
     },

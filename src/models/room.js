@@ -1,8 +1,9 @@
 import { Location } from "./location.js";
-import { NotFoundError } from "./errors.js";
+import { NotFoundError, ValidationError } from "./errors.js";
 import { NotificationService } from "../services/notificationService.js";
 import { placesNearby } from "../services/gmaps.js";
 import { geometryService } from "../services/geometry.js";
+import { parsePosition } from "../helpers.js";
 
 export class Room {
   constructor(roomId) {
@@ -78,6 +79,23 @@ export class Room {
 
   createLocation(userId, position, formattedAddress) {
     this.validate(userId);
+
+    position = parsePosition(position);
+
+    const locations = this.getAllLocations();
+    // todo: compare locations with distance?
+    const exists = locations.find(
+      (location) =>
+        location.position.lat === position.lat &&
+        location.position.lng === position.lng,
+    );
+    if (exists) {
+      console.error(
+        `Found: ${JSON.stringify(exists)} while trying to add ${JSON.stringify(position)}`,
+      );
+      throw new ValidationError("Location already exists.");
+    }
+
     const location = new Location(
       crypto.randomUUID(),
       userId,
@@ -85,8 +103,8 @@ export class Room {
       formattedAddress,
     );
     this.users.get(userId).push(location);
-    this.nearbyPlaces = null;
-    const circle = geometryService.calculateCircle(this.getAllLocations());
+    locations.push(location);
+    const circle = geometryService.calculateCircle(locations);
     this.notificationService.notify("location_created", {
       userId,
       locations: [location.serialize()],

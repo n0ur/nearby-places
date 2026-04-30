@@ -1,3 +1,4 @@
+import { ServiceError } from "../models/errors.js";
 import * as turf from "@turf/turf";
 
 const DEFAULT_RADIUS = 1000; // 1 km
@@ -34,6 +35,9 @@ class GeometryService {
 
     const points = turf.points(ps);
     const polygon = turf.convex(points);
+    if (!polygon) {
+      throw new ServiceError("Could not create a polygon from positions");
+    }
     const center = turf.centroid(polygon); // turf.centerOfMass(hull)
 
     let maxDistance = 0;

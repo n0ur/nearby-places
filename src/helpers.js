@@ -3,3 +3,10 @@ export function getPosition(pos) {
   const lng = typeof pos.lng === "function" ? pos.lng() : pos.lng;
   return { lat, lng };
 }
+
+export function parsePosition(position) {
+  return {
+    lat: parseFloat(position.lat.toFixed(3)),
+    lng: parseFloat(position.lng.toFixed(3)),
+  };
+}
