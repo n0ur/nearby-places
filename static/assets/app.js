@@ -49,6 +49,7 @@ async function initMap() {
       })
       .then((data) => {
         inputText.value = data.formatted_address;
+        togglePanel("location");
       })
       .catch((e) => {
         inputText.value = "";
@@ -84,9 +85,7 @@ async function initMap() {
       }),
     });
 
-    document.getElementById("search-results").innerHTML = "";
     document.getElementById("search-error").innerHTML = "";
-    document.getElementById("search-loading").style.display = "block";
 
     fetch(request)
       .then((res) => {
@@ -97,24 +96,16 @@ async function initMap() {
           throw new Error(data.message);
         }
         listPlaces(data);
+        togglePanel("places");
       })
       .catch((e) => {
         document.getElementById("search-error").innerHTML = e;
       })
-      .finally(() => {
-        document.getElementById("search-loading").style.display = "none";
-      });
+      .finally(() => {});
   });
 
   document.getElementById("get-position").addEventListener("click", () => {
     getCurrentPosition();
-  });
-
-  document.querySelectorAll(".tab-link").forEach((el) => {
-    el.addEventListener("click", (event) => {
-      const id = event.target.getAttribute("data-target");
-      openTab(id);
-    });
   });
 
   document.getElementById("radius-plus").addEventListener("click", () => {
@@ -131,16 +122,32 @@ async function initMap() {
     drawCircle();
   });
 
-  document.getElementById("panel-toggle").addEventListener("click", () => {
-    const panel = document.getElementById("panel");
-    panel.style.display = panel.style.display === "block" ? "none" : "block";
-  });
+  document
+    .getElementById("places-panel-toggle")
+    .addEventListener("click", () => {
+      document.getElementById("location-panel").style.display = "none";
+      togglePanel("places");
+      setSearchParams({ radius: circleObj.radius, opennow: null, type: null });
+      drawCircle();
+    });
 
-  openTab("tabLocations");
+  document
+    .getElementById("location-panel-toggle")
+    .addEventListener("click", () => {
+      document.getElementById("places-panel").style.display = "none";
+      togglePanel("location");
+      clearCircle();
+    });
+
   setupEventSource();
 }
 
 initMap();
+
+function togglePanel(id) {
+  const panel = document.getElementById(id + "-panel");
+  panel.style.display = panel.style.display === "block" ? "none" : "block";
+}
 
 function getRadius() {
   const el = document.getElementById("set-radius");
@@ -243,90 +250,39 @@ function getCurrentPosition() {
 }
 
 function createLocations(locations) {
-  const ownLocations = document.getElementById("locations-own");
-  const otherLocations = document.getElementById("locations-others");
-
   const currentUserId = getCurrentUser();
   for (const location of locations) {
     const isOwn = location.userId === currentUserId;
 
     const marker = createMarker(location, isOwn);
     mapElement.append(marker);
-    // create a marker, add it to the map, make it clickable
-    // create a list item, make the list item clickable, append it
-    // each list item has an id, when delete is clicked, its selected and deleted
-
     locationsMap.set(location.id, marker);
-
-    const item = createLocationItem(
-      location,
-      (locationId) => {
-        locationsMap.get(locationId)?.click();
-      },
-      isOwn,
-    );
-
-    if (isOwn) {
-      ownLocations.appendChild(item);
-    } else {
-      otherLocations.appendChild(item);
-    }
   }
-}
-
-function createLocationItem(location, onClick, isOwn) {
-  const item = document.createElement("div");
-  item.className = "place-item";
-  item.id = "place-" + location.id;
-  item.innerHTML = location.formatted_address;
-
-  if (isOwn) {
-    const del = document.createElement("strong");
-    del.innerHTML = " - Delete";
-    // delete a location
-    del.addEventListener("click", (e) => {
-      deleteLocationRequest(e, location.id);
-    });
-    item.appendChild(del);
-  }
-
-  item.addEventListener("click", (e) => {
-    e.stopPropagation();
-    onClick(location.id);
-  });
-  return item;
 }
 
 function createMarker(location, isOwn) {
-  const { AdvancedMarkerElement, PinElement } = libMarker;
-  const { position, formatted_address } = location;
+  const { AdvancedMarkerElement } = libMarker;
+  const { id, position, formatted_address } = location;
 
   const marker = new AdvancedMarkerElement({
+    map: mapElement.innerMap,
     position,
     title: formatted_address,
-
-    gmpDraggable: true,
-    gmpClickable: true,
   });
 
-  const styles = isOwn
-    ? {
-        background: "#5c98e7",
-        borderColor: "#137333",
-      }
-    : {
-        background: "#FBBC04",
-        borderColor: "#137333",
-      };
-  const pin = new PinElement(styles);
-  marker.append(pin);
+  const tag = document.createElement("div");
+  tag.className = isOwn ? "you-tag" : "other-tag";
+  tag.textContent = isOwn ? "You" : "Friend";
+  marker.append(tag);
 
-  const clickListener = () => {
-    infoWindow.close();
-    infoWindow.setContent(marker.title);
-    infoWindow.open(marker.map, marker);
-  };
-  marker.addEventListener("gmp-click", clickListener);
+  marker.addListener("gmp-click", () => {
+    mapElement.innerMap.panTo(position);
+    updateInfoWindow(
+      "Location",
+      createLocationContent(formatted_address, id, isOwn),
+      marker,
+    );
+  });
 
   return marker;
 }
@@ -340,8 +296,6 @@ function deleteLocations(locations) {
     const marker = locationsMap.get(location.id);
     marker.map = null;
     locationsMap.delete(locations.id);
-
-    document.getElementById("place-" + location.id).remove();
   }
 }
 
@@ -390,35 +344,10 @@ function getCurrentUser() {
   return localStorage.getItem("currentUserId");
 }
 
-function openTab(id) {
-  const tabs = document.querySelectorAll(".tab-content");
-  tabs.forEach((t) => (t.style.display = "none"));
-
-  const links = document.querySelectorAll(".tab-link");
-  links.forEach((t) => {
-    t.className = t.className.replace(" active", "");
-    if (t.getAttribute("data-target") === id) {
-      t.className += " active";
-    }
-  });
-  document.getElementById(id).style.display = "block";
-
-  if (id === "tabPlaces") {
-    drawCircle();
-    setSearchParams({ radius: circleObj.radius, opennow: null, type: null });
-  } else {
-    clearCircle();
-  }
-}
-
 function listPlaces(data) {
   if (data.length === 0) {
     return;
   }
-
-  // clear list + markers
-  const container = document.getElementById("search-results");
-  container.innerHTML = "";
 
   for (const [, marker] of placesMap) {
     marker.remove();
@@ -439,54 +368,61 @@ function listPlaces(data) {
     });
     marker.addListener("gmp-click", () => {
       mapElement.innerMap.panTo(location);
-      updateInfoWindow(place.name, createWindowContent(place), marker);
+      updateInfoWindow(place.name, createPlaceContent(place), marker);
     });
 
     // add it to map
     placesMap.set(place.place_id, marker);
-
-    // add an item to the list
-    container.appendChild(
-      createPlaceItem(place, (placeId) => {
-        placesMap.get(placeId)?.click();
-      }),
-    );
   });
 
   mapElement.innerMap.fitBounds(bounds, 100);
 }
 
-function createPlaceItem(place, onClick) {
-  const item = document.createElement("div");
-  item.className = "place-item";
-
-  item.innerHTML = `
-    <h3>${place.name}</h3>
-    <p>${place.vicinity}</p>
-    <p>⭐ ${place.rating ?? "N/A"}</p>
-  `;
-
-  item.addEventListener("click", (e) => {
-    onClick(place.place_id);
-    e.stopPropagation();
-  });
-  return item;
-}
-
-function createWindowContent(place) {
+function createPlaceContent(place) {
   // Build the content of the InfoWindow safely using DOM elements.
   const content = document.createElement("div");
+  content.style.padding = "0 10px 20px 0";
+
+  const rating = document.createElement("div");
+  rating.textContent = `⭐ ${place.rating ?? "N/A"}`;
+  rating.style.paddingBottom = "10px";
+  content.appendChild(rating);
 
   // address
   const address = document.createElement("div");
-  address.textContent = place.vicinity || "";
+  address.textContent = place.vicinity;
+  address.style.paddingBottom = "10px";
+  content.appendChild(address);
 
   // link
   const link = document.createElement("a");
   link.href = "https://www.google.com/maps/place/?q=place_id:" + place.place_id;
   link.target = "_blank";
   link.textContent = "View Details on Google Maps";
+  link.style.paddingBottom = "10px";
   content.appendChild(link);
+
+  return content;
+}
+
+function createLocationContent(formatted_address, id, isOwn) {
+  const content = document.createElement("div");
+
+  // address
+  const address = document.createElement("div");
+  address.textContent = formatted_address;
+  address.style.padding = "0 10px 15px 0";
+  content.appendChild(address);
+
+  if (isOwn) {
+    // link
+    const link = document.createElement("button");
+    link.onclick = (e) => deleteLocationRequest(e, id);
+    link.textContent = "Delete";
+    link.style.margin = "0 0 15px 0";
+    link.style.padding = "4px";
+    content.appendChild(link);
+  }
 
   return content;
 }
