@@ -1,8 +1,8 @@
 import { ServiceError } from "../models/errors.js";
 import * as turf from "@turf/turf";
 
-const DEFAULT_RADIUS = 1000; // 1 km
-const DEFAULT_UNIT = "meters";
+const DEFAULT_RADIUS = 500;
+// const DEFAULT_UNIT = "meters";
 
 class GeometryService {
   // input: Locations[]
@@ -24,13 +24,13 @@ class GeometryService {
       const point1 = turf.point(ps[0]);
       const point2 = turf.point(ps[1]);
       const center = turf.midpoint(point1, point2);
-      const distance = turf.distance(point1, point2, { units: DEFAULT_UNIT });
+      //const distance = turf.distance(point1, point2, { units: DEFAULT_UNIT });
 
       const [lng, lat] = center.geometry.coordinates;
       return {
         center: { lng, lat },
-        radius: distance / 2,
-        distance,
+        radius: DEFAULT_RADIUS, // distance / 2,
+        //distance,
       };
     }
 
@@ -48,7 +48,11 @@ class GeometryService {
     //});
 
     const [lng, lat] = center.geometry.coordinates;
-    return { center: { lat, lng }, radius: 500, polygon: serialize(polygon) };
+    return {
+      center: { lat, lng },
+      radius: DEFAULT_RADIUS,
+      polygon: serialize(polygon),
+    };
   }
 }
 
