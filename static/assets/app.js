@@ -127,6 +127,12 @@ async function initMap() {
     drawCircle();
   });
 
+  document.getElementById("set-radius").addEventListener("change", () => {
+    const radius = getRadius();
+    circleObj.radius = radius;
+    drawCircle();
+  });
+
   document
     .getElementById("places-panel-toggle")
     .addEventListener("click", () => {
@@ -482,7 +488,7 @@ function drawCircle() {
 function drawPolygon() {
   const { paths } = polygonObj;
   if (!paths) {
-    console.error("Polygon paths are missing");
+    console.log("Polygon paths are missing");
     return;
   }
   if (polygonObj.marker) {
