@@ -30,25 +30,31 @@ class GeometryService {
       return {
         center: { lng, lat },
         radius: distance / 2,
+        distance,
       };
     }
 
     const points = turf.points(ps);
-    const polygon = turf.convex(points);
+    const polygon = turf.concave(points);
     if (!polygon) {
       throw new ServiceError("Could not create a polygon from positions");
     }
     const center = turf.centroid(polygon); // turf.centerOfMass(hull)
 
-    let maxDistance = 0;
-    points.features.forEach((pt) => {
-      const d = turf.distance(center, pt, { units: DEFAULT_UNIT });
-      if (d > maxDistance) maxDistance = d;
-    });
+    //let maxDistance = 0;
+    //points.features.forEach((pt) => {
+    //  const d = turf.distance(center, pt, { units: DEFAULT_UNIT });
+    //  if (d > maxDistance) maxDistance = d;
+    //});
 
     const [lng, lat] = center.geometry.coordinates;
-    return { center: { lat, lng }, radius: maxDistance };
+    return { center: { lat, lng }, radius: 500, polygon: serialize(polygon) };
   }
+}
+
+function serialize(features) {
+  const coords = turf.coordAll(features);
+  return coords.map((coord) => ({ lng: coord[0], lat: coord[1] }));
 }
 
 export const geometryService = new GeometryService();

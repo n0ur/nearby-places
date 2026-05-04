@@ -9,6 +9,7 @@ let libMaps;
 let libCore;
 let infoWindow;
 let circleObj = { marker: null, center: null, radius: null };
+let polygonObj = { marker: null, paths: null };
 
 async function initMap() {
   // load libraries
@@ -133,6 +134,7 @@ async function initMap() {
       togglePanel("places");
       setSearchParams({ radius: circleObj.radius, opennow: null, type: null });
       drawCircle();
+      drawPolygon();
     });
 
   document
@@ -141,6 +143,7 @@ async function initMap() {
       document.getElementById("places-panel").style.display = "none";
       togglePanel("location");
       clearCircle();
+      clearPolygon();
     });
 
   setupEventSource();
@@ -201,6 +204,9 @@ function setupEventSource() {
         if (circle) {
           circleObj.center = circle.center;
           circleObj.radius = circle.radius;
+          if (circle.polygon) {
+            polygonObj.paths = circle.polygon;
+          }
         }
         updateBounds();
         break;
@@ -210,6 +216,9 @@ function setupEventSource() {
         if (circle) {
           circleObj.center = circle.center;
           circleObj.radius = circle.radius;
+          if (circle.polygon) {
+            polygonObj.paths = circle.polygon;
+          }
         }
         updateBounds();
         break;
@@ -223,6 +232,7 @@ function setupEventSource() {
           setSearchParams(search);
           circleObj.radius = search.radius;
           drawCircle();
+          drawPolygon();
         }
         break;
       }
@@ -469,9 +479,39 @@ function drawCircle() {
   });
 }
 
+function drawPolygon() {
+  const { paths } = polygonObj;
+  if (!paths) {
+    console.error("Polygon paths are missing");
+    return;
+  }
+  if (polygonObj.marker) {
+    polygonObj.marker.setPaths(paths);
+    polygonObj.marker.setMap(mapElement.innerMap);
+    return;
+  }
+  polygonObj.marker = new google.maps.Polygon({
+    paths,
+    strokeColor: "#d3d3d3",
+    strokeOpacity: 1,
+    strokeWeight: 2,
+    fillColor: "#d3d3d3",
+    fillOpacity: 0.35,
+    map: mapElement.innerMap,
+    draggable: false,
+    editable: false,
+  });
+}
+
 function clearCircle() {
   if (circleObj.marker) {
     circleObj.marker.setMap(null);
+  }
+}
+
+function clearPolygon() {
+  if (polygonObj.marker) {
+    polygonObj.marker.setMap(null);
   }
 }
 
