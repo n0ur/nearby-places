@@ -5,47 +5,45 @@ import { geometryService } from "../services/geometry.js";
 import { parsePosition } from "../helpers.js";
 
 export class Room {
-  constructor(roomId, logger) {
+  constructor(roomId, eventBus) {
     this.id = roomId;
     this.notificationService = new NotificationService();
-    this.logger = logger;
+    this.eventBus = eventBus;
     this.users = new Map(); // Map<userId, locations>
-    this.nearbyPlaces = null;
-  }
-
-  getLogger() {
-    return this.logger;
   }
 
   registerUser(userId, sse) {
     this.notificationService.addListener(userId, sse);
-    this.getLogger().info(`User registered ${userId}`);
+    this.eventBus.emit("user_registered", userId);
   }
 
   deregisterUser(userId) {
     this.notificationService.removeListener(userId);
-    this.getLogger().info(`User deregistered ${userId}`);
+    this.eventBus.emit("user_deregistered", userId);
   }
 
   joinRoom(userId) {
     this.users.set(userId, []);
+    const locations = this.getAllLocations();
+    const circle = geometryService.calculateCircle(locations);
+    this.eventBus.emit("user_joined", {
+      roomId: this.id,
+      userId,
+      locations,
+      circle,
+    });
     this.notificationService.notify("user_joined", {
       roomId: this.id,
       userId,
       locations: [],
       circle: null,
     });
-    this.getLogger().info(`User joined ${userId}`);
-
-    const locations = this.getAllLocations();
-    const circle = geometryService.calculateCircle(locations);
     this.notificationService.notifyId(userId, "location_created", {
       roomId: this.id,
       userId,
       locations,
       circle,
     });
-    this.getLogger().info(`Sent locations to user ${userId}`);
     return userId;
   }
 
@@ -53,7 +51,6 @@ export class Room {
     this.validate(userId);
     const locations = this.users.get(userId).map((l) => l.serialize());
     this.users.delete(userId);
-    this.nearbyPlaces = null;
     const circle = geometryService.calculateCircle(this.getAllLocations());
     this.notificationService.notify("user_left", {
       roomId: this.id,
@@ -61,7 +58,12 @@ export class Room {
       locations,
       circle,
     });
-    this.getLogger().info(`User left ${userId}`);
+    this.eventBus.emit("user_left", {
+      roomId: this.id,
+      userId,
+      locations,
+      circle,
+    });
   }
 
   getUserLocations(userId) {
@@ -105,9 +107,11 @@ export class Room {
       locations: [location.serialize()],
       circle,
     });
-    this.getLogger().info(
-      `Location created by ${userId}, ${JSON.stringify(position)}`,
-    );
+    this.eventBus.emit("location_created", {
+      userId,
+      locations: [location.serialize()],
+      circle,
+    });
     return location;
   }
 
@@ -132,15 +136,16 @@ export class Room {
     this.users.set(userId, filtered);
 
     const circle = geometryService.calculateCircle(this.getAllLocations());
-    this.nearbyPlaces = null;
     this.notificationService.notify("location_deleted", {
       userId,
       locations: [found],
       circle,
     });
-    this.getLogger().info(
-      `Location deleted by ${userId}, ${JSON.stringify(found)}`,
-    );
+    this.eventBus.emit("location_deleted", {
+      userId,
+      locations: [found],
+      circle,
+    });
   }
 
   hasUser(userId) {
