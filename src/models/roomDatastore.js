@@ -1,17 +1,28 @@
-import { eventBus } from "../eventBus.js";
-import { NotFoundError } from "./errors.js";
+import { NotFoundError, ServiceError } from "./errors.js";
 import { Room } from "./room.js";
 
 class RoomDatastore {
-  constructor(eventBus) {
+  constructor() {
     this.rooms = new Map();
-    this.eventBus = eventBus;
+    this.logger = null;
   }
 
-  createRoom(id) {
-    const room = new Room(id, eventBus);
+  setLogger(logger) {
+    this.logger = logger;
+  }
+
+  getLogger() {
+    if (!this.logger) {
+      throw new ServiceError("Logger not initialized");
+    }
+    return this.logger;
+  }
+
+  createRoom(id, notificationService) {
+    const room = new Room(id, this.logger, notificationService);
     this.rooms.set(id, room);
-    this.eventBus.emit("room_created", id);
+    room.notificationService.notify("room_created", id);
+    this.getLogger().info({ event: "room_created", id }, "Event emitted");
     return room;
   }
 
@@ -19,7 +30,8 @@ class RoomDatastore {
     const room = this.rooms.get(id);
     if (room) {
       this.rooms.delete(id);
-      this.eventBus.emit("room_deleted", id);
+      room.notificationService.notify("room_deleted", id);
+      this.getLogger().info({ event: "room_deleted", id }, "Event emitted");
     }
   }
 
@@ -36,4 +48,4 @@ class RoomDatastore {
   }
 }
 
-export const roomDatastore = new RoomDatastore(eventBus);
+export const roomDatastore = new RoomDatastore();

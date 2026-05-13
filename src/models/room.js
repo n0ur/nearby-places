@@ -1,37 +1,30 @@
 import { Location } from "./location.js";
 import { NotFoundError, ValidationError } from "./errors.js";
-import { NotificationService } from "../services/notificationService.js";
 import { geometryService } from "../services/geometry.js";
 import { parsePosition } from "../helpers.js";
 
 export class Room {
-  constructor(roomId, eventBus) {
+  constructor(roomId, logger, notificationService) {
     this.id = roomId;
-    this.notificationService = new NotificationService();
-    this.eventBus = eventBus;
+    this.logger = logger;
+    this.notificationService = notificationService;
     this.users = new Map(); // Map<userId, locations>
   }
 
   registerUser(userId, sse) {
     this.notificationService.addListener(userId, sse);
-    this.eventBus.emit("user_registered", userId);
+    this.logger.info({ event: "user_registered", userId }, "Event emitted");
   }
 
   deregisterUser(userId) {
     this.notificationService.removeListener(userId);
-    this.eventBus.emit("user_deregistered", userId);
+    this.logger.info({ event: "user_deregistered", userId }, "Event emitted");
   }
 
   joinRoom(userId) {
     this.users.set(userId, []);
     const locations = this.getAllLocations();
     const circle = geometryService.calculateCircle(locations);
-    this.eventBus.emit("user_joined", {
-      roomId: this.id,
-      userId,
-      locations,
-      circle,
-    });
     this.notificationService.notify("user_joined", {
       roomId: this.id,
       userId,
@@ -44,6 +37,10 @@ export class Room {
       locations,
       circle,
     });
+    this.logger.info(
+      { event: "user_joined", roomId: this.id, userId },
+      "Event emitted",
+    );
     return userId;
   }
 
@@ -58,12 +55,10 @@ export class Room {
       locations,
       circle,
     });
-    this.eventBus.emit("user_left", {
-      roomId: this.id,
-      userId,
-      locations,
-      circle,
-    });
+    this.logger.info(
+      { event: "user_left", roomId: this.id, userId },
+      "Event emitted",
+    );
   }
 
   getUserLocations(userId) {
@@ -83,7 +78,6 @@ export class Room {
     position = parsePosition(position);
 
     const locations = this.getAllLocations();
-    // todo: compare locations with distance?
     const exists = locations.find(
       (location) =>
         location.position.lat === position.lat &&
@@ -107,11 +101,10 @@ export class Room {
       locations: [location.serialize()],
       circle,
     });
-    this.eventBus.emit("location_created", {
-      userId,
-      locations: [location.serialize()],
-      circle,
-    });
+    this.logger.info(
+      { event: "location_created", userId, location: JSON.stringify(position) },
+      "Event emitted",
+    );
     return location;
   }
 
@@ -141,11 +134,10 @@ export class Room {
       locations: [found],
       circle,
     });
-    this.eventBus.emit("location_deleted", {
-      userId,
-      locations: [found],
-      circle,
-    });
+    this.logger.info(
+      { event: "location_deleted", userId, location: JSON.stringify(found) },
+      "Event emitted",
+    );
   }
 
   hasUser(userId) {

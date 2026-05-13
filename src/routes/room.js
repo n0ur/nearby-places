@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { roomDatastore } from "../models/roomDatastore.js";
 import { validateSession } from "./hooks.js";
 import { placesNearby } from "../services/gmaps.js";
+import { NotificationService } from "../services/notificationService.js";
 
 export async function roomRoutes(fastify) {
   fastify.get("/", (req, res) => {
@@ -18,7 +19,7 @@ export async function roomRoutes(fastify) {
     const roomId = req.params.id;
 
     if (!roomDatastore.hasRoom(roomId)) {
-      roomDatastore.createRoom(roomId);
+      roomDatastore.createRoom(roomId, new NotificationService());
     }
 
     const injected = readFileSync(
@@ -36,7 +37,6 @@ export async function roomRoutes(fastify) {
       .send(injected);
   });
 
-  // how to do error handling for SSE
   fastify.get(
     "/room/:id/events",
     {
@@ -115,6 +115,10 @@ export async function roomRoutes(fastify) {
         search: params,
         places: data,
       });
+      req.room.logger.info(
+        { event: "places_found", userId: req.userId, size: data.length },
+        "Event emitted",
+      );
       reply.type("application/json").send(data);
     },
   );

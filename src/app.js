@@ -5,7 +5,7 @@ import fastifySse from "@fastify/sse";
 import path from "node:path";
 import { roomRoutes } from "./routes/room.js";
 import { locationRoutes } from "./routes/location.js";
-import { eventBus } from "./eventBus.js";
+import { roomDatastore } from "./models/roomDatastore.js";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -27,7 +27,8 @@ export const fastify = Fastify({
 
 await fastify.register(fastifySse);
 
-eventBus.setLogger(fastify.log.child({ component: "roomEvents" }));
+const logger = fastify.log.child({ component: "roomEvents" });
+roomDatastore.setLogger(logger);
 
 fastify.setErrorHandler((error, request, reply) => {
   request.log.error(error);
