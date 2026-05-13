@@ -21,7 +21,6 @@ class RoomDatastore {
   createRoom(id, notificationService) {
     const room = new Room(id, this.logger, notificationService);
     this.rooms.set(id, room);
-    room.notificationService.notify("room_created", id);
     this.getLogger().info({ event: "room_created", id }, "Event emitted");
     return room;
   }
@@ -30,7 +29,6 @@ class RoomDatastore {
     const room = this.rooms.get(id);
     if (room) {
       this.rooms.delete(id);
-      room.notificationService.notify("room_deleted", id);
       this.getLogger().info({ event: "room_deleted", id }, "Event emitted");
     }
   }
