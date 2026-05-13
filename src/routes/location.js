@@ -1,6 +1,6 @@
 import { geocode } from "../services/gmaps.js";
 import { validateUserInRoom, validateSession } from "./hooks.js";
-import { roomManager } from "../models/roomManager.js";
+import { roomDatastore } from "../models/roomDatastore.js";
 
 export async function locationRoutes(fastify) {
   fastify.post(
@@ -25,7 +25,7 @@ export async function locationRoutes(fastify) {
         },
       },
       preHandler: async (req) => {
-        const { userId, room } = validateSession(req, roomManager);
+        const { userId, room } = validateSession(req, roomDatastore);
         validateUserInRoom(room, userId);
         req.userId = userId;
         req.room = room;
@@ -55,7 +55,7 @@ export async function locationRoutes(fastify) {
         },
       },
       preHandler: async (req) => {
-        const { userId, room } = validateSession(req, roomManager);
+        const { userId, room } = validateSession(req, roomDatastore);
         validateUserInRoom(room, userId);
         req.userId = userId;
         req.room = room;
@@ -76,7 +76,7 @@ export async function locationRoutes(fastify) {
     "/room/:id/location/:locId",
     {
       preHandler: async (req) => {
-        const { userId, room } = validateSession(req, roomManager);
+        const { userId, room } = validateSession(req, roomDatastore);
         validateUserInRoom(room, userId);
         req.userId = userId;
         req.room = room;

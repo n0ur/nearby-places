@@ -5,7 +5,7 @@ import fastifySse from "@fastify/sse";
 import path from "node:path";
 import { roomRoutes } from "./routes/room.js";
 import { locationRoutes } from "./routes/location.js";
-import { eventBus } from "./events/eventBus.js";
+import { eventBus } from "./eventBus.js";
 
 const isDev = process.env.NODE_ENV !== "production";
 

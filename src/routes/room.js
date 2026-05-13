@@ -1,7 +1,7 @@
 import path from "node:path";
 import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
-import { roomManager } from "../models/roomManager.js";
+import { roomDatastore } from "../models/roomDatastore.js";
 import { validateSession } from "./hooks.js";
 import { placesNearby } from "../services/gmaps.js";
 
@@ -17,8 +17,8 @@ export async function roomRoutes(fastify) {
   fastify.get("/room/:id", (req, reply) => {
     const roomId = req.params.id;
 
-    if (!roomManager.hasRoom(roomId)) {
-      roomManager.createRoom(roomId);
+    if (!roomDatastore.hasRoom(roomId)) {
+      roomDatastore.createRoom(roomId);
     }
 
     const injected = readFileSync(
@@ -42,7 +42,7 @@ export async function roomRoutes(fastify) {
     {
       sse: true,
       preHandler: async (req) => {
-        const { userId, room } = validateSession(req, roomManager);
+        const { userId, room } = validateSession(req, roomDatastore);
         req.userId = userId;
         req.room = room;
       },
@@ -96,7 +96,7 @@ export async function roomRoutes(fastify) {
         },
       },
       preHandler: async (req) => {
-        const { userId, room } = validateSession(req, roomManager);
+        const { userId, room } = validateSession(req, roomDatastore);
         req.userId = userId;
         req.room = room;
       },

@@ -2,7 +2,7 @@ import { eventBus } from "../eventBus.js";
 import { NotFoundError } from "./errors.js";
 import { Room } from "./room.js";
 
-class RoomManager {
+class RoomDatastore {
   constructor(eventBus) {
     this.rooms = new Map();
     this.eventBus = eventBus;
@@ -36,4 +36,4 @@ class RoomManager {
   }
 }
 
-export const roomManager = new RoomManager(eventBus);
+export const roomDatastore = new RoomDatastore(eventBus);
