@@ -1,7 +1,6 @@
 import { Location } from "./location.js";
 import { NotFoundError, ValidationError } from "./errors.js";
 import { NotificationService } from "../services/notificationService.js";
-import { placesNearby } from "../services/gmaps.js";
 import { geometryService } from "../services/geometry.js";
 import { parsePosition } from "../helpers.js";
 
@@ -74,17 +73,6 @@ export class Room {
     return [...this.users.values()].flatMap((locations) =>
       locations.map((l) => l.serialize()),
     );
-  }
-
-  async getNearbyPlaces(userId, params) {
-    // TODO: add caching later
-    this.nearbyPlaces = await placesNearby(params);
-    this.notificationService.notify("places_found", {
-      userId,
-      search: params,
-      places: this.nearbyPlaces,
-    });
-    return this.nearbyPlaces;
   }
 
   createLocation(userId, position, formattedAddress) {

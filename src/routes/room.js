@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
 import { roomManager } from "../models/roomManager.js";
 import { validateSession } from "./hooks.js";
+import { placesNearby } from "../services/gmaps.js";
 
 export async function roomRoutes(fastify) {
   fastify.get("/", (req, res) => {
@@ -108,7 +109,12 @@ export async function roomRoutes(fastify) {
         type,
         opennow,
       };
-      const data = await req.room.getNearbyPlaces(req.userId, params);
+      const data = await placesNearby(params);
+      req.room.notificationService.notify("places_found", {
+        userId: req.userId,
+        search: params,
+        places: data,
+      });
       reply.type("application/json").send(data);
     },
   );
