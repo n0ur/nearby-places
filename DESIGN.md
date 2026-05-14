@@ -55,7 +55,12 @@ Alternatives to Google Maps Platform could be:
 - Open Street Map, to load the initial map.
 - Nominatim: A geocoding service for OSM (open street map) data.
 
-The Google Maps Platform has the richest Places database and provides reasonable free usage tier for a personal project. To prevent exceeding usage quotas, requests are rate-limited to 40/minute.
+The Google Maps Platform has the richest Places database and provides reasonable free usage tier for a personal project.
+
+To prevent exceeding usage quotas and abuse:
+
+- requests are rate-limited to 40/minute.
+- separate API keys are used for frontend and backend, also with some restrictions enabled.
 
 ## Data Storage
 
