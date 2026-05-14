@@ -7,14 +7,14 @@ import { getPosition } from "../helpers.js";
 const client = new Client(axios.create({}));
 
 const placesClient = new PlacesClient({
-  apiKey: process.env.GOOGLE_MAPS_API_KEY,
+  apiKey: process.env.GOOGLE_MAPS_BACKEND_API_KEY,
 });
 
 // params: { address: string }
 export async function geocode(params) {
   const request = {
     params: {
-      key: process.env.GOOGLE_MAPS_API_KEY,
+      key: process.env.GOOGLE_MAPS_BACKEND_API_KEY,
       ...params,
     },
   };
@@ -40,7 +40,7 @@ export async function geocode(params) {
 export async function placesNearby(params) {
   const request = {
     params: {
-      key: process.env.GOOGLE_MAPS_API_KEY,
+      key: process.env.GOOGLE_MAPS_BACKEND_API_KEY,
       ...params,
     },
   };
