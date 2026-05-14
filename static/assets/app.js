@@ -200,6 +200,7 @@ function setupEventSource() {
     }
 
     const { locations, circle } = response.data;
+    console.log("Event received", response.event, locations);
     switch (response.event) {
       case "connected":
         setCurrentUser(response.data.userId);
@@ -335,7 +336,7 @@ function deleteLocations(locations) {
 
     const marker = locationsMap.get(location.id);
     marker.map = null;
-    locationsMap.delete(locations.id);
+    locationsMap.delete(location.id);
   }
 }
 
@@ -361,11 +362,22 @@ function updateInfoWindow(title, content, anchor) {
 }
 
 function updateBounds() {
+  // on initial map load, no locations are set yet
+  if (locationsMap.size === 0) {
+    mapElement.innerMap.setCenter(DEFAULT_POSITION);
+    mapElement.innerMap.setZoom(12);
+    return;
+  }
+
   const bounds = new libCore.LatLngBounds();
   for (const [, marker] of locationsMap) {
     bounds.extend(marker.position);
   }
   mapElement.innerMap.fitBounds(bounds, 100);
+
+  if (locationsMap.size === 1) {
+    mapElement.innerMap.setZoom(16);
+  }
 }
 
 function setCurrentUser(userId) {
