@@ -172,17 +172,28 @@ function getRadius() {
 }
 
 function setupEventSource() {
+  let retries = 0;
   const eventSource = new EventSource(location.href + "/events");
 
   eventSource.onerror = (error) => {
     const el = document.getElementById("app-errors");
-    el.innerHTML = "App error, refresh page";
+
+    if (++retries >= 5) {
+      eventSource.close();
+    }
+
+    if (eventSource.readyState === EventSource.CLOSED) {
+      el.innerHTML = "Connection closed. Refresh the page.";
+    } else {
+      el.innerHTML = "Connection lost. Attempting to reconnect...";
+    }
+
     el.style.display = "block";
-    console.error(error);
-    eventSource.close();
+    console.error("SSE Error:", error);
   };
 
   eventSource.onopen = () => {
+    retries = 0;
     const el = document.getElementById("app-errors");
     el.style.display = "none";
   };

@@ -21,8 +21,10 @@ export class Room {
     this.logger.info({ event: "user_deregistered", userId }, "Event emitted");
   }
 
-  joinRoom(userId) {
-    this.users.set(userId, []);
+  joinRoom(userId, { rejoin }) {
+    if (rejoin === false) {
+      this.users.set(userId, []);
+    }
     const locations = this.getAllLocations();
     const circle = geometryService.calculateCircle(locations);
     this.notificationService.notify("user_joined", {
@@ -30,6 +32,7 @@ export class Room {
       userId,
       locations: [],
       circle: null,
+      rejoin,
     });
     this.notificationService.notifyId(userId, "location_created", {
       roomId: this.id,
