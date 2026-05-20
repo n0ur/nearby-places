@@ -1,7 +1,5 @@
 import { ServiceError } from "./models/errors.js";
-
-const CLEANUP_DELAY_MS = 30 * 1000; // 30 secs
-export const SSE_RETRY_MS = 5 * 1000; // 5 secs
+import { CLEANUP_DELAY_MS } from "./constants.js";
 
 export class CleanupQueue {
   constructor(delay = CLEANUP_DELAY_MS) {

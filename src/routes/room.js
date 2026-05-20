@@ -5,7 +5,8 @@ import { roomDatastore } from "../models/roomDatastore.js";
 import { validateSession } from "./hooks.js";
 import { placesNearby } from "../services/gmaps.js";
 import { NotificationService } from "../services/notificationService.js";
-import { cleanupQueue, SSE_RETRY_MS } from "../cleanupQueue.js";
+import { cleanupQueue } from "../cleanupQueue.js";
+import { SSE_RETRY_MS } from "../constants.js";
 
 export async function roomRoutes(fastify) {
   fastify.get("/", (req, res) => {
@@ -51,16 +52,14 @@ export async function roomRoutes(fastify) {
     async (req, reply) => {
       const { userId, room } = req;
 
-      // delete cleanup queue item if it exists
-      cleanupQueue.dequeue(room, userId);
-      room.registerUser(userId, reply.sse);
-      room.joinRoom(userId, { rejoin: room.hasUser(userId) });
-
       reply.sse.keepAlive();
       await reply.sse.send({
         data: { event: "connected", data: { userId } },
         retry: SSE_RETRY_MS,
       });
+
+      room.registerUser(userId, reply.sse);
+      room.joinRoom(userId, { rejoin: room.hasUser(userId) });
 
       reply.sse.onClose(async () => {
         cleanupQueue.enqueue(room, userId);

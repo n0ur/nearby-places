@@ -1,3 +1,5 @@
+import { SSE_RETRY_MS } from "../constants.js";
+
 export class NotificationService {
   constructor() {
     this.listeners = new Map(); // <id, reply.sse>
@@ -18,7 +20,7 @@ export class NotificationService {
     }
     return sse.send({
       data: { event, data },
-      retry: 1000,
+      retry: SSE_RETRY_MS,
     });
   }
 
@@ -31,7 +33,7 @@ export class NotificationService {
         }
         return sse.send({
           data: { event, data },
-          retry: 1000,
+          retry: SSE_RETRY_MS,
         });
       })
       .toArray();
