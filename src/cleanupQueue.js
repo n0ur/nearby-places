@@ -27,12 +27,12 @@ class CleanupQueue {
         this.getLogger().info({ event: "cleanup", userId });
         room.leaveRoom(userId);
         room.deregisterUser(userId);
+        this.queue.delete(userId);
       }, CLEANUP_DELAY_MS),
     );
   }
 
   dequeue(room, userId) {
-    console.log(this.queue, userId);
     if (this.queue.has(userId)) {
       this.getLogger().info({ event: "dequeued_cleanup", userId });
       const timeout = this.queue.get(userId);
