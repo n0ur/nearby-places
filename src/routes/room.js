@@ -5,7 +5,7 @@ import { roomDatastore } from "../models/roomDatastore.js";
 import { validateSession } from "./hooks.js";
 import { placesNearby } from "../services/gmaps.js";
 import { NotificationService } from "../services/notificationService.js";
-import { cleanupQueue } from "../cleanupQueue.js";
+import { cleanupQueue, SSE_RETRY_MS } from "../cleanupQueue.js";
 
 export async function roomRoutes(fastify) {
   fastify.get("/", (req, res) => {
@@ -59,7 +59,7 @@ export async function roomRoutes(fastify) {
       reply.sse.keepAlive();
       await reply.sse.send({
         data: { event: "connected", data: { userId } },
-        retry: 5000,
+        retry: SSE_RETRY_MS,
       });
 
       reply.sse.onClose(async () => {

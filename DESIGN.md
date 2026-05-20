@@ -78,9 +78,7 @@ Here is a good [comparison document](https://www.index.dev/skill-vs-skill/socket
 
 ### Connection Lifecycle
 
-If SSE disconnects temporarily, the connection to the server is closed permanently and the user is shown a message to refresh the page. User data is lost and a new connection needs to be established. This cleanup prevents increasing memory usage, since the data is stored in-memory on the server.
-
-However, this behavior can be improved by queuing the cleanup to be run after X minutes, allowing the user time to reconnect in case they exited temporarily or by accident.
+If the connection fails, the client retries up to 5 times at 5-second intervals before giving up. During this period, the server retains the user's in-memory data to allow reconnection. Once the connection closes permanently, the user is asked to refresh the page and all associated session data is cleaned up. Since the application stores state entirely in-memory, this cleanup prevents stale data from accumulating and increasing memory usage.
 
 ## API Library
 

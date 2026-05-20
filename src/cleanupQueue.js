@@ -1,11 +1,13 @@
 import { ServiceError } from "./models/errors.js";
 
 const CLEANUP_DELAY_MS = 30 * 1000; // 30 secs
+export const SSE_RETRY_MS = 5 * 1000; // 5 secs
 
-class CleanupQueue {
-  constructor() {
+export class CleanupQueue {
+  constructor(delay = CLEANUP_DELAY_MS) {
     this.queue = new Map();
     this.logger = null;
+    this.delay = delay;
   }
 
   setLogger(logger) {
@@ -20,16 +22,23 @@ class CleanupQueue {
   }
 
   enqueue(room, userId) {
-    this.getLogger().info({ event: "equeued_cleanup", userId });
-    this.queue.set(
-      userId,
-      setTimeout(() => {
-        this.getLogger().info({ event: "cleanup", userId });
-        room.leaveRoom(userId);
-        room.deregisterUser(userId);
-        this.queue.delete(userId);
-      }, CLEANUP_DELAY_MS),
-    );
+    if (this.queue.has(userId)) {
+      const timeout = this.queue.get(userId);
+      clearTimeout(timeout);
+    }
+
+    this.getLogger().info({ event: "enqueued_cleanup", userId });
+
+    const timeout = setTimeout(() => {
+      this.getLogger().info({ event: "cleanup", userId });
+      room.leaveRoom(userId);
+      room.deregisterUser(userId);
+      this.queue.delete(userId);
+    }, this.delay);
+
+    this.queue.set(userId, timeout);
+
+    return timeout;
   }
 
   dequeue(room, userId) {
@@ -38,6 +47,7 @@ class CleanupQueue {
       const timeout = this.queue.get(userId);
       clearTimeout(timeout);
       this.queue.delete(userId);
+      return timeout;
     }
   }
 
@@ -48,6 +58,13 @@ class CleanupQueue {
     };
     this.getLogger().info({ event: "queue_stats", ...stat });
     return stat;
+  }
+
+  clear() {
+    for (const timeout of cleanupQueue.queue.values()) {
+      clearTimeout(timeout);
+    }
+    this.queue.clear();
   }
 }
 
