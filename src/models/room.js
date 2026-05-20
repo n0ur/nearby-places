@@ -27,19 +27,15 @@ export class Room {
     }
     const locations = this.getAllLocations();
     const circle = geometryService.calculateCircle(locations);
-    this.notificationService.notify("user_joined", {
-      roomId: this.id,
+    this.notificationService.notify(
+      "user_joined",
+      {
+        roomId: this.id,
+        userId,
+      },
       userId,
-      locations: [],
-      circle: null,
-      rejoin,
-    });
-    this.notificationService.notifyId(userId, "location_created", {
-      roomId: this.id,
-      userId,
-      locations,
-      circle,
-    });
+      { locations, circle },
+    );
     this.logger.info(
       { event: "user_joined", roomId: this.id, userId },
       "Event emitted",

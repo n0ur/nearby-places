@@ -13,23 +13,16 @@ export class NotificationService {
     this.listeners.delete(id);
   }
 
-  async notifyId(id, event, data) {
-    const sse = this.listeners.get(id);
-    if (sse === null || !sse.isConnected) {
-      return;
-    }
-    return sse.send({
-      data: { event, data },
-      retry: SSE_RETRY_MS,
-    });
-  }
-
-  async notify(event, data) {
+  async notify(event, data, userId = null, userData = null) {
     const promises = this.listeners
       .entries()
-      .map(([, sse]) => {
+      .map(([id, sse]) => {
         if (sse === null || !sse.isConnected) {
           return;
+        }
+        // extend data only to a specific user
+        if (id === userId && typeof userData === "object") {
+          data = { ...data, ...userData };
         }
         return sse.send({
           data: { event, data },
