@@ -1,7 +1,11 @@
 import axios from "axios";
 import { Client } from "@googlemaps/google-maps-services-js";
 import { PlacesClient } from "@googlemaps/places";
-import { NotFoundError, ServiceError } from "../models/errors.js";
+import {
+  NotFoundError,
+  ServiceError,
+  ValidationError,
+} from "../models/errors.js";
 import { getPosition } from "../helpers.js";
 
 const client = new Client(axios.create({}));
@@ -84,4 +88,28 @@ export async function searchNearby(circle) {
   } catch (e) {
     throw new ServiceError(e);
   }
+}
+
+export function constructLegacySearchParams(params) {
+  const obj = {};
+
+  // search fields for the legacy API
+  const searchFields = ["location", "radius", "opennow", "type"];
+  for (const field of searchFields) {
+    if (!(field in params)) {
+      throw new ValidationError(`Missing required property: ${field}`);
+    }
+    obj[field] = params[field];
+  }
+
+  for (const field of ["lat", "lng"]) {
+    if (!(field in params.location)) {
+      throw new ValidationError(
+        `Missing required property for location: ${field}`,
+      );
+    }
+    obj.location[field] = params.location[field];
+  }
+
+  return obj;
 }
