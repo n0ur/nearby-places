@@ -37,8 +37,10 @@ For an architecture overview, assumptions and constraints see the [Design](./DES
 ## Future Improvements
 
 - [x] Improve the zoom behavior
-- [ ] Add a cleanup queue, which would allow users to retain data if temporarily disconnected.
+- [x] Add a cleanup queue, which would allow users to retain data if temporarily disconnected.
 - [ ] Perform search automatically on location or parameter change
-- [ ] Batch search requests and allow cancellation.
+- [x] Batch search requests and allow cancellation.
 - [ ] Add address autocomplete
 - [ ] Import/export location data.
+- [ ] Use the new Places API
+- [ ] Extend search params

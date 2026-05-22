@@ -21,18 +21,30 @@ The site allows users to enter their locations on a map and search for places ne
 
 ```mermaid
 flowchart LR
-    User -->|HTTP| A[Join Room]
-    User -->|HTTP| B[Create Location]
-    User -->|HTTP| C[Search]
-    User ---|SSE| D[Events]
-    Users ---|SSE| D[Events]
+    User -->|HTTP| A[API / Create Room]
+    User -->|HTTP| B[API / Create Location]
+    User -->|HTTP| C[API / Search]
+    User ---|SSE| D[API / Events]
+    Users ---|SSE| D[API / Events]
 
     A -->|Create room, register user| E[(Room Datastore)]
     B -->|Calculate center| H[Geometry Service]
     B -->|Geocode| F[Google Maps Service]
-    C -->|NearbySearch| F[Google Maps Service]
-    D ---|notify| G[NotificationService]
+    C -->|search| SS[Search Service]
+    SS -->|NearbySearch| F[Google Maps Service]
+    D ---|notify| G[Notification Service]
 ```
+
+## API Endpoints
+
+| Method | Path                         | Description                                   |
+| ------ | ---------------------------- | --------------------------------------------- |
+| GET    | `/room/:id`                  | Create a room, set user ID                    |
+| GET    | `/room/:id/events`           | Join a room, SSE stream for real-time updates |
+| POST   | `/room/:id/current_position` | Share current position                        |
+| POST   | `/room/:id/location`         | Create a location on map / geocode            |
+| DELETE | `/room/:id/location/:locId`  | Delete a location from the map                |
+| GET    | `/room/:id/places`           | Get nearby places of the submitted locations  |
 
 ## Calculating the center
 
