@@ -3,8 +3,6 @@ import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
 import { roomDatastore } from "../models/roomDatastore.js";
 import { validateSession } from "./hooks.js";
-import { placesNearby } from "../services/gmaps.js";
-import { NotificationService } from "../services/notificationService.js";
 import { cleanupQueue } from "../cleanupQueue.js";
 import { SSE_RETRY_MS } from "../constants.js";
 
@@ -21,7 +19,7 @@ export async function roomRoutes(fastify) {
     const roomId = req.params.id;
 
     if (!roomDatastore.hasRoom(roomId)) {
-      roomDatastore.createRoom(roomId, new NotificationService());
+      roomDatastore.createRoom(roomId);
     }
 
     const injected = readFileSync(
@@ -110,16 +108,7 @@ export async function roomRoutes(fastify) {
         type,
         opennow,
       };
-      const data = await placesNearby(params);
-      req.room.notificationService.notify("places_found", {
-        userId: req.userId,
-        search: params,
-        places: data,
-      });
-      req.room.logger.info(
-        { event: "places_found", userId: req.userId, size: data.length },
-        "Event emitted",
-      );
+      const data = await req.room.search(req.userId, params);
       reply.type("application/json").send(data);
     },
   );

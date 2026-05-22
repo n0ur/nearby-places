@@ -4,10 +4,11 @@ import { geometryService } from "../services/geometry.js";
 import { parsePosition } from "../helpers.js";
 
 export class Room {
-  constructor(roomId, logger, notificationService) {
+  constructor(roomId, logger, notificationService, searchService) {
     this.id = roomId;
     this.logger = logger;
     this.notificationService = notificationService;
+    this.searchService = searchService;
     this.users = new Map(); // Map<userId, locations>
   }
 
@@ -152,5 +153,19 @@ export class Room {
     if (!this.hasUser(userId)) {
       throw new NotFoundError("User doesn't exist");
     }
+  }
+
+  async search(userId, params) {
+    return this.searchService.search(userId, params, (params, data) => {
+      this.notificationService.notify("places_found", {
+        userId: userId,
+        search: params,
+        places: data,
+      });
+      this.logger.info(
+        { event: "places_found", userId: userId, size: data.length },
+        "Event emitted",
+      );
+    });
   }
 }

@@ -12,6 +12,10 @@ const mockRoom = {
   },
 };
 
+const mockConstructSearchParamsFn = mock.fn((params) => {
+  return params;
+});
+
 const mockSearchFn = mock.fn(async () => {
   return Promise.resolve([{ results: [] }]);
 });
@@ -35,66 +39,99 @@ describe("SearchService", () => {
 
   it("constructs a request from params and runs it", async () => {
     // arrange
-    const searchService = new SearchService(mockSearchFn);
+    const searchService = new SearchService(
+      mockConstructSearchParamsFn,
+      mockSearchFn,
+    );
 
     // act
-    await searchService.search("user-1", searchParams, mockRoom);
+    await searchService.search("user-1", searchParams, () => {
+      mockRoom.notificationService.notify();
+    });
 
     // assert
     assert.strictEqual(mockSearchFn.mock.callCount(), 1);
     assert.strictEqual(mockRoom.notificationService.notify.mock.callCount(), 1);
+    assert.strictEqual(searchService.requests().size, 0);
   });
 
   it("executes search once when called multiple times with the same params", async () => {
     // arrange
-    const searchService = new SearchService(mockSearchFn);
+    const searchService = new SearchService(
+      mockConstructSearchParamsFn,
+      mockSearchFn,
+    );
 
     // act
-    await searchService.search("user-1", searchParams, mockRoom);
-    await searchService.search("user-1", searchParams, mockRoom);
+    searchService.search("user-1", searchParams, () => {
+      mockRoom.notificationService.notify();
+    });
+    searchService.search("user-1", searchParams, () => {
+      mockRoom.notificationService.notify();
+    });
+
+    await setTimeout(100);
 
     // assert
     assert.strictEqual(mockSearchFn.mock.callCount(), 1);
     assert.strictEqual(mockRoom.notificationService.notify.mock.callCount(), 1);
+    assert.strictEqual(searchService.requests().size, 0);
   });
 
   it("executes multiple times when called with different params", async () => {
     // arrange
-    const searchService = new SearchService(mockSearchFn);
+    const searchService = new SearchService(
+      mockConstructSearchParamsFn,
+      mockSearchFn,
+    );
 
     // act
-    searchService.search("user-1", searchParams, mockRoom);
-    searchService.search("user-1", { ...searchParams, radius: 600 }, mockRoom);
+    searchService.search("user-1", searchParams, () => {
+      mockRoom.notificationService.notify();
+    });
+    searchService.search("user-1", { ...searchParams, radius: 600 }, () => {
+      mockRoom.notificationService.notify();
+    });
+
+    await setTimeout(100);
 
     // assert
     assert.strictEqual(mockSearchFn.mock.callCount(), 2);
+    assert.strictEqual(searchService.requests().size, 0);
   });
 
   it("cancels the old request and makes a new one when params are different", async () => {
     // arrange
     const mockSearchFn = mock.fn(async () => {
-      await setTimeout(100);
+      await setTimeout(400);
       return Promise.resolve([{ results: [] }]);
     });
-    const searchService = new SearchService(mockSearchFn);
+    const searchService = new SearchService(
+      mockConstructSearchParamsFn,
+      mockSearchFn,
+    );
 
     // act
     const data = await Promise.all([
-      searchService.search("user-1", searchParams, mockRoom),
-      searchService.search(
-        "user-1",
-        { ...searchParams, radius: 600 },
-        mockRoom,
-      ),
+      searchService.search("user-1", searchParams, () => {
+        mockRoom.notificationService.notify();
+      }),
+      searchService.search("user-1", { ...searchParams, radius: 600 }, () => {
+        mockRoom.notificationService.notify();
+      }),
       searchService.search(
         "user-1",
         { ...searchParams, opennow: false },
-        mockRoom,
+        () => {
+          mockRoom.notificationService.notify();
+        },
       ),
     ]);
 
     // assert
     assert.strictEqual(mockSearchFn.mock.callCount(), data.length);
     assert.deepEqual(data, ["Aborted", "Aborted", [{ results: [] }]]);
+    assert.strictEqual(mockRoom.notificationService.notify.mock.callCount(), 1);
+    assert.strictEqual(searchService.requests().size, 0);
   });
 });

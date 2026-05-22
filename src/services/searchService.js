@@ -1,16 +1,16 @@
-import { constructLegacySearchParams } from "../services/gmaps.js";
-
 export class SearchService {
+  #constructParamsFn;
   #searchFn;
   #requests;
 
-  constructor(searchFn) {
+  constructor(constructParamsFn, searchFn) {
     this.#requests = new Map();
+    this.#constructParamsFn = constructParamsFn;
     this.#searchFn = searchFn;
   }
 
-  async search(userId, params, room) {
-    params = constructLegacySearchParams(params);
+  async search(userId, params, callback) {
+    params = this.#constructParamsFn(params);
     // hash params
     const hashedParams = JSON.stringify(params);
     if (this.#requests.has(hashedParams)) {
@@ -28,25 +28,22 @@ export class SearchService {
 
     const promise = new Promise((resolve, reject) => {
       const { abort } = this.#requests.get(hashedParams);
-      this.resolveIfAborted(resolve, abort);
+      if (abort.signal.aborted) {
+        this.#requests.delete(hashedParams);
+        return resolve("Aborted");
+      }
       this.#searchFn(params)
         .then((data) => {
-          this.resolveIfAborted(resolve, abort);
-          room.notificationService.notify("places_found", {
-            userId: userId,
-            search: params,
-            places: data,
-          });
-          room.logger.info(
-            { event: "places_found", userId: userId, size: data.length },
-            "Event emitted",
-          );
-          return data;
-        })
-        .then((data) => {
+          if (abort.signal.aborted) {
+            this.#requests.delete(hashedParams);
+            return resolve("Aborted");
+          }
+          callback(params, data);
+          this.#requests.delete(hashedParams);
           resolve(data);
         })
         .catch((e) => {
+          this.#requests.delete(hashedParams);
           reject(e);
         });
     });
@@ -59,9 +56,7 @@ export class SearchService {
     return promise;
   }
 
-  resolveIfAborted(resolve, abort) {
-    if (abort.signal.aborted) {
-      return resolve("Aborted");
-    }
+  requests() {
+    return this.#requests;
   }
 }

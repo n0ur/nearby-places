@@ -1,3 +1,9 @@
+import { NotificationService } from "../services/notificationService.js";
+import { SearchService } from "../services/searchService.js";
+import {
+  constructLegacySearchParams,
+  placesNearby,
+} from "../services/gmaps.js";
 import { NotFoundError, ServiceError } from "./errors.js";
 import { Room } from "./room.js";
 
@@ -18,8 +24,13 @@ class RoomDatastore {
     return this.logger;
   }
 
-  createRoom(id, notificationService) {
-    const room = new Room(id, this.logger, notificationService);
+  createRoom(id) {
+    const room = new Room(
+      id,
+      this.logger,
+      new NotificationService(),
+      new SearchService(constructLegacySearchParams, placesNearby),
+    );
     this.rooms.set(id, room);
     this.getLogger().info({ event: "room_created", id }, "Event emitted");
     return room;
