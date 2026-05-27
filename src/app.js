@@ -8,22 +8,10 @@ import { locationRoutes } from "./routes/location.js";
 import { roomDatastore } from "./models/roomDatastore.js";
 import { cleanupQueue } from "./cleanupQueue.js";
 
-const isDev = process.env.NODE_ENV !== "production";
-
 export const fastify = Fastify({
-  logger: isDev
-    ? {
-        level: "info",
-        transport: {
-          target: "pino-pretty",
-          options: {
-            colorize: true,
-          },
-        },
-      }
-    : {
-        level: "info",
-      },
+  logger: {
+    level: "info",
+  },
 });
 
 await fastify.register(fastifySse);
