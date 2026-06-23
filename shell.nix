@@ -2,6 +2,7 @@
 pkgs.mkShell {
   packages = [
     pkgs.postman
+    pkgs.ffmpeg
   ];
   shellHook = ''
     PS0=""
