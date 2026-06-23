@@ -7,6 +7,7 @@ import { roomRoutes } from "./routes/room.js";
 import { locationRoutes } from "./routes/location.js";
 import { roomDatastore } from "./models/roomDatastore.js";
 import { cleanupQueue } from "./cleanupQueue.js";
+import { bot } from "./services/telegramBot.js";
 
 export const fastify = Fastify({
   logger: {
@@ -50,3 +51,10 @@ await fastify.register(import("@fastify/rate-limit"), {
 
 fastify.register(roomRoutes);
 fastify.register(locationRoutes);
+
+bot.api.config.use((prev, method, payload, signal) => {
+  logger.trace({ method, payload: JSON.stringify(payload) }, "Telegram API");
+  return prev(method, payload, signal);
+});
+
+bot.start();
