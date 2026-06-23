@@ -10,7 +10,7 @@
     "lint": "eslint src/ test/ static/",
     "lint:fix": "eslint src/ test/ static/ --fix",
     "format": "prettier . --write",
-    "test": "node --test",
+    "test": "node --env-file=.env.test --test",
     "prepare": "husky"
   },
   "lint-staged": {
