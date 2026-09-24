@@ -28,6 +28,9 @@ To run locally or self-host:
     openssl rand -base64 40 | xclip -r -selection clipboard
     ```
 - Install dependencies with `npm i`
+- If you're using the Telegram bot, start its local inference services with
+  `docker compose up -d` (whisper.cpp for transcription, llama.cpp for
+  intent extraction — see `data/models/` for the expected model files).
 - Start the server with `node --env-file .env src/index.js`
 
 ## Design
