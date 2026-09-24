@@ -3,6 +3,7 @@ pkgs.mkShell {
   packages = [
     pkgs.postman
     pkgs.ffmpeg
+    pkgs.llama-cpp
   ];
   shellHook = ''
     PS0=""
