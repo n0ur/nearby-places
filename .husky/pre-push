@@ -1,0 +1,11 @@
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+if [ "$branch" = "main" ]; then
+  echo "Direct push to main is not allowed. Open a pull request instead."
+  exit 1
+fi
+
+if ! echo "$branch" | grep -qE "^(feature|fix|chore|refactor|test|docs)/[a-z0-9-]+$"; then
+  echo "Warning: branch name '$branch' does not match the convention <type>/<short-description>."
+  echo "Expected types: feature, fix, chore, refactor, test, docs."
+fi
