@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.1"
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - name: Write test env
+        run: |
+          cat > .env.test <<'EOF'
+          NODE_ENV=test
+          GOOGLE_MAPS_API_KEY=
+          GOOGLE_MAPS_BACKEND_API_KEY=
+          SERVER_PORT=
+          SESSION_SECRET=
+          TELEGRAM_BOT_TOKEN=
+          WHISPERCPP_API_ENDPOINT=
+          LLM_API_ENDPOINT=
+          EOF
+
+      - run: npm run test:ci

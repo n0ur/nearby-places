@@ -11,6 +11,7 @@
     "lint:fix": "eslint src/ test/ static/ --fix",
     "format": "prettier . --write",
     "test": "node --env-file=.env.test --test",
+    "test:ci": "node --env-file=.env.test --test test/cleanupQueue.test.js test/services/searchService.test.js test/services/ffmpeg.test.js test/services/gmaps.test.js",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -43,6 +44,8 @@
   },
   "homepage": "https://github.com/n0ur/nearby-places#readme",
   "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
     "@eslint/js": "^10.0.1",
     "eslint": "^10.1.0",
     "eslint-config-prettier": "^10.1.8",
