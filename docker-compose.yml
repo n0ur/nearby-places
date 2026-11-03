@@ -1,0 +1,22 @@
+# Local development only. For production, use the Dockerfile.
+services:
+  app:
+    image: node:24-alpine
+    working_dir: /app
+    env_file: .env
+    environment:
+      NODE_ENV: development
+    ports:
+      - "${SERVER_PORT:-3000}:${SERVER_PORT:-3000}"
+    volumes:
+      # Mount the source so edits restart the server.
+      - .:/app
+      # Keep container dependencies apart from host node_modules.
+      - node_modules:/app/node_modules
+    # --no-save and --no-package-lock keep package files unchanged on the host.
+    command: >
+      sh -c "npm install --no-save --no-package-lock --ignore-scripts &&
+             node --watch src/index.js"
+
+volumes:
+  node_modules:
