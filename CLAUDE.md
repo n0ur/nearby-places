@@ -21,7 +21,7 @@ npm run format                       # prettier --write
 
 There is no build step; `dist/` and `static/assets/` are served directly. Node >= 24.1 is required (uses `node --test`, native `--env-file`).
 
-Husky's pre-commit hook runs `lint-staged` (eslint + prettier on staged files) then the full test suite — expect commits to be blocked if either fails. GitHub Actions CI runs lint and tests on every pull request and push to `main`.
+Husky's pre-commit hook runs `lint-staged` (eslint + prettier on staged files) then the full test suite — expect commits to be blocked if either fails. GitHub Actions runs lint and tests on every pull request to `main` (`pr.yml`). On merge to `main`, it builds the Docker image and pushes it to GHCR (`main.yml`).
 
 ## Architecture
 
